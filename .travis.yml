@@ -6,7 +6,7 @@ env:
   global:
     - PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
     - MAIN_CMD="pytest"
-    - CONDA_DEPENDENCIES=""
+    - CONDA_DEPENDENCIES="pytest-cov coveralls coverage codecov"
     - PIP_DEPENDENCIES=""
     - CONDA_CHANNELS="conda-forge"
     - CONDA_CHANNEL_PRIORITY="strict"
