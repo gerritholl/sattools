@@ -14,7 +14,7 @@ def test_get_areas():
              'x_0': 0, 'y_0': 0},
             750, 300, (2500000, 4000000, 3000000, 40000000))
     with patch("pyresample.area_config.load_area", autospec=True) as pal, \
-         patch("pkg_resources.resource_filename", autospec=True) as prf:
+            patch("pkg_resources.resource_filename", autospec=True) as prf:
         prf.return_value = "/dev/null"
         pal.return_value = [ad]
         D = sattools.ptc.get_all_areas(["tofu", "tempeh"])
@@ -27,7 +27,7 @@ def test_add_pkg():
     import sattools.ptc
     scn = MagicMock()
     with patch("satpy.composites.CompositorLoader", autospec=True) as scC, \
-         patch("pkg_resources.resource_filename", autospec=True) as prf:
+            patch("pkg_resources.resource_filename", autospec=True) as prf:
         prf.return_value = "/dev/null"
         scC.return_value.load_compositors.return_value = ({}, {})
         sattools.ptc.add_pkg_comps_mods(scn, "apple", ["tomato"])
@@ -36,5 +36,6 @@ def test_add_pkg():
 def test_add_pkgs():
     import sattools.ptc
     scn = MagicMock()
-    with patch("sattools.ptc.add_all_pkg_comps_mods", autospec=True) as spa:
-        sattools.ptc.add_all_pkg_comps_mods(scn, ["apple", "strawberry"], ["tomato"])
+    with patch("sattools.ptc.add_all_pkg_comps_mods", autospec=True):
+        sattools.ptc.add_all_pkg_comps_mods(
+                scn, ["apple", "strawberry"], ["tomato"])
