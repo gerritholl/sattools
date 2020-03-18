@@ -9,7 +9,8 @@ common utils for interacting with pytroll and others
 Description
 ===========
 
-A longer description of your project goes here...
+Various small utilities that are in common between various packages I
+author, such as fcitools, fogtools, and others.
 
 
 Note
