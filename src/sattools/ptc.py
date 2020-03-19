@@ -35,7 +35,7 @@ def add_pkg_comps_mods(scn, pkg, sensors=["abi"]):
     cpl = satpy.composites.CompositorLoader(p)
     (comps, mods) = cpl.load_compositors(sensors)
     satpy.config.recursive_dict_update(scn.dep_tree.compositors, comps)
-    satpy.config.recursive_dict_update(scn.dep_tree.mods, mods)
+    satpy.config.recursive_dict_update(scn.dep_tree.modifiers, mods)
 
 
 def add_all_pkg_comps_mods(scn, pkgs, sensors=["abi"]):
