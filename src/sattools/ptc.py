@@ -14,6 +14,10 @@ def get_all_areas(packages):
     D = {}
     for pkg in packages:
         fn = pkg_resources.resource_filename(pkg, "etc/areas.yaml")
+        # `load_area` does not currently give a sane error if a file does not
+        # exist, see https://github.com/pytroll/pyresample/issues/250
+        # manually test that file exists and can be read
+        open(fn, "r").close()
         areas = pyresample.area_config.load_area(fn)
         D.update({ar.area_id: ar for ar in areas})
     return D

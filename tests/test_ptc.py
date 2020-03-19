@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import patch, MagicMock
 
 
@@ -13,14 +14,17 @@ def test_get_areas():
              'no_defs': 'None', 'proj': 'eqc', 'type': 'crs', 'units': 'm',
              'x_0': 0, 'y_0': 0},
             750, 300, (2500000, 4000000, 3000000, 40000000))
-    with patch("pyresample.area_config.load_area", autospec=True) as pal, \
-            patch("pkg_resources.resource_filename", autospec=True) as prf:
+    with patch("pkg_resources.resource_filename", autospec=True) as prf:
         prf.return_value = "/dev/null"
-        pal.return_value = [ad]
-        D = sattools.ptc.get_all_areas(["tofu", "tempeh"])
-        assert prf.call_count == 2
-        assert pal.call_count == 2
-        assert D == {"shrubbery": ad}
+        with patch("pyresample.area_config.load_area", autospec=True) as pal:
+            pal.return_value = [ad]
+            D = sattools.ptc.get_all_areas(["tofu", "tempeh"])
+            assert prf.call_count == 2
+            assert pal.call_count == 2
+            assert D == {"shrubbery": ad}
+        prf.return_value = "/file/not/found"
+        with pytest.raises(FileNotFoundError):
+            sattools.ptc.get_all_areas(["oranges"])
 
 
 def test_add_pkg():
