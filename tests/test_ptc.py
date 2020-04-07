@@ -40,6 +40,6 @@ def test_add_pkg():
 def test_add_pkgs():
     import sattools.ptc
     scn = MagicMock()
-    with patch("sattools.ptc.add_all_pkg_comps_mods", autospec=True):
+    with patch("sattools.ptc.add_pkg_comps_mods", autospec=True):
         sattools.ptc.add_all_pkg_comps_mods(
                 scn, ["apple", "strawberry"], ["tomato"])
