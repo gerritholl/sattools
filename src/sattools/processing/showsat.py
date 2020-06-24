@@ -5,6 +5,7 @@ import pathlib
 import argparse
 from .. import vis
 from .. import log
+from .. import ptc
 
 def get_parser():
     parser = argparse.ArgumentParser(
@@ -65,11 +66,12 @@ def parse_cmdline():
 def main():
     p = parse_cmdline()
     log.setup_main_handler()
+    areas = ptc.get_all_areas(["sattools", "fcitools"])
     files = vis.show(
             files=p.files,
             channels=p.channels,
             composites=p.composites,
-            regions=p.areas,
+            regions=[areas[area] for area in p.areas],
             d_out=p.outdir,
             reader=p.reader,
             fn_out=p.filename_pattern,

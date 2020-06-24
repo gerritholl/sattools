@@ -1,0 +1,341 @@
+# based on oflws333:/data_backed/pytroll/perforce_workspaces/gholl_oflks333_4756/config/areas.def
+# converted with pyresample.area_config.convert_def_to_yaml
+# selected the ones covered by https://ninjoservices.dwd.de/wiki/display/SATMET/PyTroll-Produkte
+erdscheibeTRIVIS0005km:
+  description: erdscheibeTRIVIS0005km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 3500
+    width: 3500
+  area_extent:
+    lower_left_xy:
+    - -8756594.86046705
+    - -8751591.049355892
+    upper_right_xy:
+    - 8751591.049355892
+    - 8756594.86046705
+europaTRIVIS1500m:
+  description: europaTRIVIS1500m
+  projection:
+    proj: eqc
+    lat_ts: 0
+    lat_0: 0
+    lon_0: 10
+    x_0: 0
+    y_0: 0
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 3500
+    width: 5000
+  area_extent:
+    lower_left_xy:
+    - -3450000.300326239
+    - 2942474.7042913623
+    upper_right_xy:
+    - 4048499.5238221036
+    - 8190974.961771889
+    units: m
+europaTRIVIS4000m:
+  description: europaTRIVIS4000m
+  projection:
+    proj: eqc
+    lat_ts: 0
+    lat_0: 0
+    lon_0: 10
+    x_0: 0
+    y_0: 0
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 1250
+    width: 2500
+  area_extent:
+    lower_left_xy:
+    - -5000000.644987794
+    - 3069974.4830714385
+    upper_right_xy:
+    - 4995998.709293775
+    - 8065975.41875503
+    units: m
+nq0001km:
+  description: nq0001km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 15000
+    width: 10000
+  area_extent:
+    lower_left_xy:
+    - -3339372.1035707924
+    - -6400802.815723847
+    upper_right_xy:
+    - 6678956.827368999
+    - 8627192.631589318
+nq0003km:
+  description: nq0003km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 6666
+    width: 6666
+  area_extent:
+    lower_left_xy:
+    - -10016827.23100899
+    - -10016827.23100899
+    upper_right_xy:
+    - 10016828.344203897
+    - 10016827.23100899
+nq0008km:
+  description: nq0008km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 2500
+    width: 2500
+  area_extent:
+    lower_left_xy:
+    - -10015323.304688372
+    - -10015323.304688372
+    upper_right_xy:
+    - 10015323.304688372
+    - 10015323.304688372
+nqceur1km:
+  description: nqceur1km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 2000
+    width: 4000
+  area_extent:
+    lower_left_xy:
+    - -1446768.2148744117
+    - 4564542.174097573
+    upper_right_xy:
+    - 2559963.1228071474
+    - 6567405.792034875
+nqceur3km:
+  description: nqceur3km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 666
+    width: 1333
+  area_extent:
+    lower_left_xy:
+    - -1446768.2148744117
+    - 4568048.738057562
+    upper_right_xy:
+    - 2556957.496555729
+    - 6566905.967521214
+nqeuro1km:
+  description: nqeuro1km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 6000
+    width: 12000
+  area_extent:
+    lower_left_xy:
+    - -6011097.76874457
+    - 2560675.5675482242
+    upper_right_xy:
+    - 6011097.76874457
+    - 8571273.511779133
+nqeuro3km:
+  description: nqeuro3km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 2000
+    width: 4000
+  area_extent:
+    lower_left_xy:
+    - -6010095.89332743
+    - 2561677.4429653636
+    upper_right_xy:
+    - 6010095.89332743
+    - 8570271.636361994
+pcwarnapp1500m:
+  description: pcwarnapp1500m
+  projection:
+    proj: longlat
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 1350
+    width: 2400
+  area_extent:
+    lower_left_xy:
+    - -15.074981
+    - 34.7419093
+    upper_right_xy:
+    - 35.2421796
+    - 63.567219
+mercwarnapp1500m:
+  description: mercwarnapp1500m
+  projection:
+    EPSG: 3857
+  shape:
+    height: 1350
+    width: 2400
+  area_extent:
+    lower_left_xy:
+    - -1725452.125
+    - 4096139.0
+    upper_right_xy:
+    - 3939191.025
+    - 9096139.0
+nq065E3km:
+  description: nq065E3km
+  projection:
+    proj: eqc
+    lat_ts: 0
+    lat_0: 0
+    lon_0: 65
+    x_0: 0
+    y_0: 0
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 6677
+    width: 6677
+  area_extent:
+    lower_left_xy:
+    - -10016826.117814083
+    - -10016827.23100899
+    upper_right_xy:
+    - 10016825.004619176
+    - 10016827.23100899
+    units: m
+nq075W3km:
+  description: nq075W3km
+  projection:
+    proj: eqc
+    lat_ts: 0
+    lat_0: 0
+    lon_0: -75
+    x_0: 0
+    y_0: 0
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 6677
+    width: 6677
+  area_extent:
+    lower_left_xy:
+    - -10016826.117814077
+    - -10016827.23100899
+    upper_right_xy:
+    - 10016826.117814083
+    - 10016827.23100899
+    units: m
+nq135W3km:
+  description: nq135W3km
+  projection:
+    proj: eqc
+    lat_ts: 0
+    lat_0: 0
+    lon_0: -135
+    x_0: 0
+    y_0: 0
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 6677
+    width: 6677
+  area_extent:
+    lower_left_xy:
+    - -10016825.00461917
+    - -10016827.23100899
+    upper_right_xy:
+    - 10016828.3442039
+    - 10016827.23100899
+    units: m
+nq140E3km:
+  description: nq140E3km
+  projection:
+    proj: eqc
+    lat_ts: 0
+    lat_0: 0
+    lon_0: 140
+    x_0: 0
+    y_0: 0
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 6677
+    width: 6677
+  area_extent:
+    lower_left_xy:
+    - -10016828.344203899
+    - -10016827.23100899
+    upper_right_xy:
+    - 10016825.004619176
+    - 10016827.23100899
+    units: m
+nq041E3km:
+  description: nq041E3km
+  projection:
+    proj: eqc
+    lat_ts: 0
+    lat_0: 0
+    lon_0: 41.5
+    x_0: 0
+    y_0: 0
+    ellps: WGS84
+    no_defs: null
+  shape:
+    height: 6677
+    width: 6677
+  area_extent:
+    lower_left_xy:
+    - -10016828.344203899
+    - -10016827.23100899
+    upper_right_xy:
+    - 10016825.004619174
+    - 10016827.23100899
+    units: m
+wcm3km:
+  description: wcm3km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 6672
+    width: 13346
+  area_extent:
+    lower_left_xy:
+    - -20022246.440601483
+    - -10010372.926932797
+    upper_right_xy:
+    - 20025250.953657996
+    - 10010372.926932797
+wcm10km:
+  description: wcm10km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 2001
+    width: 4003
+  area_extent:
+    lower_left_xy:
+    - -20027418.34414374
+    - -9996189.710610826
+    upper_right_xy:
+    - 20007395.307334755
+    - 10016212.747419812
+wwwWcm40km:
+  description: wwwWcm40km
+  projection:
+    EPSG: 4087
+  shape:
+    height: 499
+    width: 1000
+  area_extent:
+    lower_left_xy:
+    - -20037496.097645253
+    - -9978673.588734504
+    upper_right_xy:
+    - 19997421.080959678
+    - 10018748.605420083
