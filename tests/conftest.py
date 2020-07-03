@@ -8,10 +8,8 @@
 """
 
 import pytest
-import os
+
 
 @pytest.fixture(autouse=True)
 def setUp(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "scratch"))
-
-

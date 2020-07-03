@@ -1,14 +1,13 @@
 """Test visualisation routines
 """
 
-import datetime
-import pathlib
-from unittest.mock import patch, call, MagicMock
+from unittest.mock import patch, MagicMock
 
 import xarray
 import numpy
 import pytest
 import satpy
+
 
 @pytest.fixture
 def fakearea():
@@ -30,7 +29,6 @@ def fakescene(fakearea):
     # should I mock get_xy_from_lonlat here?  Probably as it's an external
     # dependency that I can assume to be correct, and it simplifies the
     # unit test here.
-    st_tm = datetime.datetime(1899, 12, 31, 23, 55)
     sc = satpy.Scene()
     for v in {"raspberry", "blueberry", "maroshki", "strawberry"}:
         sc[v] = xarray.DataArray(
@@ -55,9 +53,9 @@ def test_show(fakescene, fakearea, tmp_path):
                 reader="pranksat",
                 label="fish")
     assert S == {tmp_path / "out" /
-                      f"fish_{area:s}_{ds:s}.tiff"
-                      for ds in ["raspberry", "blueberry", "maroshki", "strawberry"]
-                      for area in ["native"]}
+                 f"fish_{area:s}_{ds:s}.tiff"
+                 for ds in ["raspberry", "blueberry", "maroshki", "strawberry"]
+                 for area in ["native"]}
     for f in S:
         assert f.exists()
     fakescene.save_dataset = MagicMock()
@@ -83,7 +81,8 @@ def test_show(fakescene, fakearea, tmp_path):
     empty = Scene()
     with patch("satpy.Scene") as sS:
         sS.return_value = empty
-        S = sattools.vis.show(["/tmp/penguin"], [], [], ["home"],
+        S = sattools.vis.show(
+                ["/tmp/penguin"], [], [], ["home"],
                 tmp_path / "not", "nowhere", reader="pranksat",
                 show_only_coastlines=False, path_to_coastlines="/coast",
                 label="bird")

@@ -7,6 +7,7 @@ from .. import vis
 from .. import log
 from .. import ptc
 
+
 def get_parser():
     parser = argparse.ArgumentParser(
             description=__doc__,
@@ -66,7 +67,8 @@ def parse_cmdline():
 def main():
     p = parse_cmdline()
     log.setup_main_handler()
-    areas = ptc.get_all_areas(["sattools", "fcitools", "satpy"])
+    areas = ptc.get_all_areas(["sattools", "fcitools", "satpy"],
+                              missing_ok=True)
     files = vis.show(
             files=p.files,
             channels=p.channels,

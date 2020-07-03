@@ -2,10 +2,6 @@
 
 import sys
 import logging
-import datetime
-import pathlib
-
-import appdirs
 
 logger = logging.getLogger(__name__)
 

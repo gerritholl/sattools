@@ -1,19 +1,31 @@
 """Utilities related to pytroll configuration
 """
 
+import logging
+
 import satpy.composites
 import satpy.config
 import pkg_resources
 import pyresample
 
+logger = logging.getLogger(__name__)
 
-def get_all_areas(packages):
+
+def get_all_areas(packages, missing_ok=False):
     """Get a dictionary with all findable areas
     """
 
     D = {}
     for pkg in packages:
-        fn = pkg_resources.resource_filename(pkg, "etc/areas.yaml")
+        try:
+            fn = pkg_resources.resource_filename(pkg, "etc/areas.yaml")
+        except ModuleNotFoundError:
+            if missing_ok:
+                logger.exception(f"Cannot collect areas for {pkg:s}")
+                continue
+            else:
+                raise
+
         # `load_area` does not currently give a sane error if a file does not
         # exist, see https://github.com/pytroll/pyresample/issues/250
         # manually test that file exists and can be read

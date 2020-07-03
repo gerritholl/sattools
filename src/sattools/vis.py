@@ -4,6 +4,7 @@ import xarray
 import numpy
 import satpy
 
+
 def show(
         files,
         channels,
@@ -31,7 +32,8 @@ def show(
             List of channels (datasets) to be generated
 
         regions (List[str]):
-            List of AreaDefinition strings or objects these shall be generated for.
+            List of AreaDefinition strings or objects these shall be generated
+            for.
             The special region 'native' means no reprojection is applied.
 
         d_out (pathlib.Path):

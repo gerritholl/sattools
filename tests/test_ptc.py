@@ -1,8 +1,10 @@
+import logging
+
 import pytest
 from unittest.mock import patch, MagicMock
 
 
-def test_get_areas():
+def test_get_areas(caplog):
     # need to mock pkg_resources.resource_filename
     # and pyresample.area_config.load_area
     # such that I get a list of areas
@@ -25,6 +27,14 @@ def test_get_areas():
         prf.return_value = "/file/not/found"
         with pytest.raises(FileNotFoundError):
             sattools.ptc.get_all_areas(["oranges"])
+    with pytest.raises(ModuleNotFoundError):
+        sattools.ptc.get_all_areas(["lemons"])
+    with pytest.raises(ModuleNotFoundError):
+        sattools.ptc.get_all_areas(["lemons"], missing_ok=False)
+    with caplog.at_level(logging.ERROR):
+        D = sattools.ptc.get_all_areas(["lemons"], missing_ok=True)
+        assert "Cannot collect areas for lemons" in caplog.text
+    assert D == {}
 
 
 def test_add_pkg():

@@ -1,7 +1,6 @@
 """Test the showsat script
 """
 
-import os
 from unittest.mock import patch
 
 
