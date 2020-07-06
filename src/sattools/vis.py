@@ -73,10 +73,12 @@ def show(
     sc.load(channels)
     sc.load(composites)
     if show_only_coastlines:
-        if show_only_coastlines in sc.keys():
-            ar = sc[show_only_coastlines].attrs["area"]
-        else:
+        try:
+            da = sc[show_only_coastlines]
+        except (KeyError, ValueError, TypeError):
             ar = show_only_coastlines
+        else:
+            ar = da.attrs["area"]
         sc["black"] = xarray.DataArray(
                 numpy.zeros(shape=ar.shape),
                 attrs=(atr := {"area": ar}))
