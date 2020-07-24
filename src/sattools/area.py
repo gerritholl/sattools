@@ -1,7 +1,6 @@
-import math
-
 import numpy
 import pyresample
+
 
 def join_areadefs(*areas):
     """Join one or more areadefinitions
