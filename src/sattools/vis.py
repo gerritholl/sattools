@@ -170,10 +170,7 @@ def show_video_abi_glm(
     logger.info("Calculating joint area")
     # FIXME: this needs to be a separate function and needs a unit test,
     # maybe it can even move into multiscene...
-    areas = {x["C14"].attrs["area"] for x in ms.scenes}
-    set(itertools.chain(*(ar.defs if isinstance(ar,
-        pyresample.geometry.StackedAreaDefinition
-        ) else [ar] for ar in areas)))
+    areas = set(_flatten_areas(_get_all_areas_from_multiscene(ms, "C14")))
     joint = area.join_areadefs(*areas)
     ms.load(["C14_flash_extent_density"], unload=False)
     ms.scenes  # access to avoid https://github.com/pytroll/satpy/issues/1273
@@ -191,3 +188,27 @@ def show_video_abi_glm(
         raise ValueError("Never found a joint scene :(")
     logger.info("Making a video")
     mr.save_animation(str(out_dir / vid_out), enh_args=enh_args)
+
+
+def _get_all_areas_from_multiscene(ms, datasets=None):
+    S = set()
+    if isinstance(datasets, (str, satpy.DatasetID)):
+        datasets = [datasets]
+    for sc in ms.scenes:
+        for ds in datasets or sc.keys():
+            try:
+                S.add(sc[ds].attrs["area"])
+            except KeyError:
+                pass  # not an area-aware dataset
+    return S
+
+
+def _flatten_areas(areas):
+    """From areas and stacked areas, get all areas contained.
+    """
+
+    for ar in areas:
+        if isinstance(ar, pyresample.geometry.StackedAreaDefinition):
+            yield from _flatten_areas(ar.defs)
+        else:
+            yield ar
