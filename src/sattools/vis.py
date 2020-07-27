@@ -1,15 +1,14 @@
 import pathlib
 
-import itertools
 import xarray
 import numpy
 import satpy
 import pyresample.geometry
 import logging
 
-logger = logging.getLogger(__name__)
-
 from . import area
+
+logger = logging.getLogger(__name__)
 
 decorate_args = {
         "decorate": [
@@ -45,6 +44,7 @@ overlay_args = {
                 "resolution": "f"}}}
 
 enh_args = {"decorate": decorate_args, "overlay": overlay_args}
+
 
 def show(
         files,
@@ -150,10 +150,12 @@ def show(
             L.add(fn)
     return L
 
+
 def show_video_abi_glm(
         files, out_dir,
         img_out="{name:s}-{start_time:%Y%m%d_%H%M}.tiff",
-        vid_out="{name:s}-{start_time:%Y%m%d_%H%M}-{end_time:%Y%m%d_%H%M}.mp4"):
+        vid_out="{name:s}-{start_time:%Y%m%d_%H%M}-"
+                "{end_time:%Y%m%d_%H%M}.mp4"):
     """Show a video.
 
     Show a video with ABI MESO and GLM L2 C14_flash_extent_density.
@@ -179,7 +181,8 @@ def show_video_abi_glm(
 
     logger.info("Making an image")
     for (sc2, sc3) in zip(ms.scenes, mr.scenes):
-        if isinstance(sc2["C14"].attrs["area"], pyresample.geometry.StackedAreaDefinition):
+        if isinstance(sc2["C14"].attrs["area"],
+                      pyresample.geometry.StackedAreaDefinition):
             sc3.save_datasets(
                 filename=str(out_dir / img_out),
                 overlay=enh_args["overlay"])

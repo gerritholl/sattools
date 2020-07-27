@@ -2,7 +2,6 @@
 """
 
 import datetime
-import pathlib
 from unittest.mock import patch, MagicMock
 
 import xarray
@@ -133,18 +132,18 @@ def test_show(fakescene, fakearea, tmp_path):
     assert S == set()
 
 
-
 @patch("satpy.MultiScene.from_files", autospec=True)
 def test_show_video(sMf, fake_multiscene2, tmp_path):
     from sattools.vis import show_video_abi_glm
     sMf.return_value = fake_multiscene2
-    fake_multiscene2.resample = MagicMock()
-    fake_multiscene2.resample.return_value.scenes = fake_multiscene2.scenes[:1]*3
+    mm = MagicMock()
+    fake_multiscene2.resample = mm
+    mm.return_value.scenes = fake_multiscene2.scenes[:1]*3
     for sc in fake_multiscene2.scenes:
         sc.save_datasets = MagicMock()
     show_video_abi_glm(
             ["fake_in1", "fake_in2"], tmp_path)
-    fake_multiscene2.resample.return_value.save_animation.assert_called_once()
+    mm.return_value.save_animation.assert_called_once()
 
 
 def test_get_all_areas(fake_multiscene):
