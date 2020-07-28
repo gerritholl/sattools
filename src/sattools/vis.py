@@ -7,6 +7,7 @@ import pyresample.geometry
 import logging
 
 from . import area
+from . import scutil
 
 logger = logging.getLogger(__name__)
 
@@ -161,23 +162,11 @@ def show_video_abi_glm(
     Show a video with ABI MESO and GLM L2 C14_flash_extent_density.
     """
 
-    logger.info("Constructing multiscene")
-    ms = satpy.MultiScene.from_files(
+    (ms, mr) = scutil.get_resampled_multiscene(
             files,
             reader=["glm_l2", "abi_l1b"],
-            ensure_all_readers=True,
-            group_keys=["start_time"],
-            time_threshold=35)  # every 10 minutes M1 starts 3 seconds late
-    ms.load(["C14"])
-    logger.info("Calculating joint area")
-    # FIXME: this needs to be a separate function and needs a unit test,
-    # maybe it can even move into multiscene...
-    areas = set(_flatten_areas(_get_all_areas_from_multiscene(ms, "C14")))
-    joint = area.join_areadefs(*areas)
-    ms.load(["C14_flash_extent_density"], unload=False)
-    ms.scenes  # access to avoid https://github.com/pytroll/satpy/issues/1273
-    logger.info("Resampling")
-    mr = ms.resample(joint, unload=False)
+            load_first="C14",
+            load_next=["C14_flash_extent_density"])
 
     logger.info("Making an image")
     for (sc2, sc3) in zip(ms.scenes, mr.scenes):
@@ -191,27 +180,3 @@ def show_video_abi_glm(
         raise ValueError("Never found a joint scene :(")
     logger.info("Making a video")
     mr.save_animation(str(out_dir / vid_out), enh_args=enh_args)
-
-
-def _get_all_areas_from_multiscene(ms, datasets=None):
-    S = set()
-    if isinstance(datasets, (str, satpy.DatasetID)):
-        datasets = [datasets]
-    for sc in ms.scenes:
-        for ds in datasets or sc.keys():
-            try:
-                S.add(sc[ds].attrs["area"])
-            except KeyError:
-                pass  # not an area-aware dataset
-    return S
-
-
-def _flatten_areas(areas):
-    """From areas and stacked areas, get all areas contained.
-    """
-
-    for ar in areas:
-        if isinstance(ar, pyresample.geometry.StackedAreaDefinition):
-            yield from _flatten_areas(ar.defs)
-        else:
-            yield ar

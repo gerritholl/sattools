@@ -147,13 +147,13 @@ def test_show_video(sMf, fake_multiscene2, tmp_path):
 
 
 def test_get_all_areas(fake_multiscene):
-    from sattools.vis import _get_all_areas_from_multiscene
+    from sattools.scutil import _get_all_areas_from_multiscene
     areas = _get_all_areas_from_multiscene(fake_multiscene)
     assert len(areas) == 3
 
 
 def test_flatten_areas():
-    from sattools.vis import _flatten_areas
+    from sattools.area import flatten_areas
     ars = [pyresample.create_area_def(
             "test-area",
             {"proj": "eqc", "lat_ts": 0, "lat_0": 0, "lon_0": 0,
@@ -165,7 +165,7 @@ def test_flatten_areas():
             center=(0, 0)) for r in (5, 6)]
     sar = pyresample.geometry.StackedAreaDefinition(*ars)
     sar2 = pyresample.geometry.StackedAreaDefinition(sar, sar)
-    flat = list(_flatten_areas([*ars, sar, sar2]))
+    flat = list(flatten_areas([*ars, sar, sar2]))
     assert all(isinstance(ar, pyresample.geometry.AreaDefinition)
                for ar in flat)
     assert len(flat) == 8

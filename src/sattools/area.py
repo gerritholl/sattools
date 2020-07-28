@@ -30,3 +30,14 @@ def join_areadefs(*areas):
             units=first.proj_dict["units"],
             area_extent=largest_extent,
             resolution=first.resolution)
+
+
+def flatten_areas(areas):
+    """From areas and stacked areas, get all areas contained.
+    """
+
+    for ar in areas:
+        if isinstance(ar, pyresample.geometry.StackedAreaDefinition):
+            yield from flatten_areas(ar.defs)
+        else:
+            yield ar
