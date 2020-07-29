@@ -142,7 +142,7 @@ def show(
         for dn in ls.keys():
             fn = pathlib.Path(d_out) / fn_out.format(
                     area=arid,
-                    dataset=dn.name,
+                    dataset=dn["name"],
                     label=label)
             ls.save_dataset(
                     dn,
