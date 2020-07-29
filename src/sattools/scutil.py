@@ -32,7 +32,7 @@ def get_resampled_multiscene(files, reader, load_first, load_next):
 
 def _get_all_areas_from_multiscene(ms, datasets=None):
     S = set()
-    if isinstance(datasets, (str, satpy.DatasetID)):
+    if isinstance(datasets, (str, satpy.DataID)):
         datasets = [datasets]
     for sc in ms.scenes:
         for ds in datasets or sc.keys():
