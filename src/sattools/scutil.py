@@ -4,9 +4,11 @@
 import satpy
 
 import logging
-logger = logging.getLogger(__name__)
 
 from . import area
+
+logger = logging.getLogger(__name__)
+
 
 def get_resampled_multiscene(files, reader, load_first, load_next):
     """Get a multiscene resampled to the area covering all scenes in it.

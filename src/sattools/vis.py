@@ -6,7 +6,6 @@ import satpy
 import pyresample.geometry
 import logging
 
-from . import area
 from . import scutil
 
 logger = logging.getLogger(__name__)
