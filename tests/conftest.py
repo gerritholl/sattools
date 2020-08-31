@@ -66,6 +66,7 @@ def fake_multiscene():
             area=pyresample.geometry.StackedAreaDefinition(
                 sc1["rasberry"].attrs["area"],
                 sc2["rasberry"].attrs["area"]))
+    sc2["no-area"] = xarray.DataArray(numpy.arange(5))
     return satpy.MultiScene([sc1, sc2, sc3])
 
 
