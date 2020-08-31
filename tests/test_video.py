@@ -28,6 +28,7 @@ def test_main(fpvp, sMf, fake_multiscene2, fake_multiscene3, tmp_path):
     fake_multiscene2.resample = unittest.mock.MagicMock()
     fake_multiscene2.resample.return_value = fake_multiscene3
     fake_multiscene3.save_animation = unittest.mock.MagicMock()
+    fake_multiscene3.scenes[2].save_datasets = unittest.mock.MagicMock()
 
     sattools.processing.video.main()
     sMf.assert_called_once_with(
@@ -36,4 +37,6 @@ def test_main(fpvp, sMf, fake_multiscene2, fake_multiscene3, tmp_path):
             ensure_all_readers=True,
             group_keys=["start_time"],
             time_threshold=35)
-    assert (tmp_path / "out_dir" / "test-C14.tiff").exists()
+    fake_multiscene3.save_animation.assert_called_once()
+    fake_multiscene3.scenes[2].save_datasets.assert_called_once()
+    assert not (tmp_path / "out_dir" / "test-C14.tiff").exists()
