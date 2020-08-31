@@ -3,6 +3,47 @@ import pathlib
 import xarray
 import numpy
 import satpy
+import pyresample.geometry
+import logging
+
+from . import scutil
+
+logger = logging.getLogger(__name__)
+
+decorate_args = {
+        "decorate": [
+            {"text": {
+                "txt": "{start_time:%Y-%m-%d %H:%M}",
+                "align": {
+                    "top_bottom": "bottom",
+                    "left_right": "right"},
+                "font": '/usr/share/fonts/truetype/arial.ttf',
+                "font_size": 20,
+                "height": 30,
+                "bg": "black",
+                "bg_opacity": 255,
+                "line": "white"}}]}
+
+overlay_args = {
+        "coast_dir": "/media/nas/x21308/shp/",
+        "overlays": {
+            "coasts": {
+                "outline": (255, 255, 0),
+                "width": 1.5,
+                "level": 1,
+                "resolution": "f"},
+            "rivers": {
+                "outline": (0, 0, 255),
+                "width": 1.5,
+                "level": 5,
+                "resolution": "f"},
+            "borders": {
+                "outline": (0, 0, 0),
+                "width": 1.5,
+                "level": 3,
+                "resolution": "f"}}}
+
+enh_args = {"decorate": decorate_args, "overlay": overlay_args}
 
 
 def show(
@@ -100,7 +141,7 @@ def show(
         for dn in ls.keys():
             fn = pathlib.Path(d_out) / fn_out.format(
                     area=arid,
-                    dataset=dn.name,
+                    dataset=dn["name"],
                     label=label)
             ls.save_dataset(
                     dn,
@@ -108,3 +149,33 @@ def show(
                     overlay=overlay)
             L.add(fn)
     return L
+
+
+def show_video_abi_glm(
+        files, out_dir,
+        img_out="{name:s}-{start_time:%Y%m%d_%H%M}.tiff",
+        vid_out="{name:s}-{start_time:%Y%m%d_%H%M}-"
+                "{end_time:%Y%m%d_%H%M}.mp4"):
+    """Show a video.
+
+    Show a video with ABI MESO and GLM L2 C14_flash_extent_density.
+    """
+
+    (ms, mr) = scutil.get_resampled_multiscene(
+            files,
+            reader=["glm_l2", "abi_l1b"],
+            load_first="C14",
+            load_next=["C14_flash_extent_density"])
+
+    logger.info("Making an image")
+    for (sc2, sc3) in zip(ms.scenes, mr.scenes):
+        if isinstance(sc2["C14"].attrs["area"],
+                      pyresample.geometry.StackedAreaDefinition):
+            sc3.save_datasets(
+                filename=str(out_dir / img_out),
+                overlay=enh_args["overlay"])
+            break
+    else:
+        raise ValueError("Never found a joint scene :(")
+    logger.info("Making a video")
+    mr.save_animation(str(out_dir / vid_out), enh_args=enh_args)
