@@ -3,6 +3,7 @@
 
 from unittest.mock import patch, MagicMock
 
+import pytest
 import pyresample
 
 
@@ -58,7 +59,7 @@ def test_show(fakescene, fakearea, tmp_path):
 
 
 @patch("satpy.MultiScene.from_files", autospec=True)
-def test_show_video(sMf, fake_multiscene2, tmp_path):
+def test_show_video(sMf, fake_multiscene2, fake_multiscene3, tmp_path):
     from sattools.vis import show_video_abi_glm
     sMf.return_value = fake_multiscene2
     mm = MagicMock()
@@ -69,6 +70,12 @@ def test_show_video(sMf, fake_multiscene2, tmp_path):
     show_video_abi_glm(
             ["fake_in1", "fake_in2"], tmp_path)
     mm.return_value.save_animation.assert_called_once()
+    sMf.return_value = fake_multiscene3
+    fake_multiscene3.resample = MagicMock()
+    fake_multiscene3.resample.return_value = fake_multiscene3
+    with pytest.raises(ValueError):
+        show_video_abi_glm(
+                ["fake_in1", "fake_in2"], tmp_path)
 
 
 def test_flatten_areas():
