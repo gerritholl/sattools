@@ -100,5 +100,6 @@ def fake_multiscene3(fake_multiscene2):
     """
     fms = satpy.MultiScene(copy.deepcopy(fake_multiscene2.scenes))
     for k in fms.scenes[2].keys():
-        fms.scenes[2][k].attrs["area"] = fake_multiscene2.scenes[0][k].attrs["area"]
+        fms.scenes[2][k].attrs["area"] = fake_multiscene2.scenes[0][k].\
+                attrs["area"]
     return fms

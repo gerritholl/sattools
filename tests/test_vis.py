@@ -1,14 +1,8 @@
 """Test visualisation routines
 """
 
-import datetime
 from unittest.mock import patch, MagicMock
 
-import xarray
-import numpy
-import pytest
-import satpy
-import satpy.tests.utils
 import pyresample
 
 
