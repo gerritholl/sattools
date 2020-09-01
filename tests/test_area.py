@@ -52,3 +52,5 @@ def test_join_areadefs():
         join_areadefs(ar3, ar4)
     with pytest.raises(ValueError):
         join_areadefs(ar3, ar5)
+    with pytest.raises(TypeError):
+        join_areadefs()
