@@ -33,7 +33,7 @@ def plotdir(basedir=None, create=False):
             (basedir or
              os.environ.get("PLOT_BASEDIR") or
              "/media/nas/x21308/plots_and_maps/")) /
-                      datetime.datetime.now().strftime("%Y/%m/%d"))
+          datetime.datetime.now().strftime("%Y/%m/%d"))
     if create:
         pd.mkdir(parents=True, exist_ok=True)
     return pd
