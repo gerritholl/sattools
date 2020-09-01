@@ -10,6 +10,8 @@ def join_areadefs(*areas):
     """
 
     first = None
+    if len(areas) == 0:
+        raise TypeError("Must pass at least one area, found zero.")
     for area in areas:
         if first is None:
             first = area
