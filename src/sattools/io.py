@@ -28,7 +28,12 @@ def get_cache_dir(base=None, subdir=""):
     return cacheroot
 
 
-def plotdir():
-    pd = pathlib.Path("/media/nas/x21308/plots_and_maps/" +
-                      datetime.datetime.now().strftime("%Y/%m/%d"))
+def plotdir(basedir=None, create=False):
+    pd = (pathlib.Path(
+            (basedir or
+             os.environ.get("PLOT_BASEDIR") or
+             "/media/nas/x21308/plots_and_maps/")) /
+          datetime.datetime.now().strftime("%Y/%m/%d"))
+    if create:
+        pd.mkdir(parents=True, exist_ok=True)
     return pd

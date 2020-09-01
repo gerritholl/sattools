@@ -36,3 +36,19 @@ def test_cache_dir():
             pass
         os.environ.clear()
         os.environ.update(_environ)
+
+
+def test_plotdir(tmp_path, monkeypatch):
+    from sattools.io import plotdir
+    monkeypatch.delenv("PLOT_BASEDIR", raising=False)
+    pd = plotdir(create=False)
+    assert pd.parent.parent.parent == pathlib.Path(
+            "/media/nas/x21308/plots_and_maps")
+    pd = plotdir(create=False, basedir=tmp_path)
+    assert pd.parent.parent.parent == tmp_path
+    monkeypatch.setenv("PLOT_BASEDIR", str(tmp_path))
+    pd = plotdir(create=False)
+    assert pd.parent.parent.parent == tmp_path
+    assert not pd.exists()
+    pd = plotdir(create=True)
+    assert pd.exists()
