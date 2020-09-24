@@ -32,7 +32,7 @@ def test_main(fpvp, sMf, fake_multiscene2, fake_multiscene3, tmp_path):
 
     sattools.processing.video.main()
     sMf.assert_called_once_with(
-            [tmp_path / f"in{i:d}" for i in (1, 2, 3)],
+            [str(tmp_path / f"in{i:d}") for i in (1, 2, 3)],
             reader=["glm_l2", "abi_l1b"],
             ensure_all_readers=True,
             group_keys=["start_time"],
