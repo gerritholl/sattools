@@ -16,7 +16,7 @@ def get_resampled_multiscene(files, reader, load_first, load_next):
 
     logger.info("Constructing multiscene")
     ms = satpy.MultiScene.from_files(
-            files,
+            [str(x) for x in files],
             reader=["glm_l2", "abi_l1b"],
             ensure_all_readers=True,
             group_keys=["start_time"],
