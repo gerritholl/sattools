@@ -6,20 +6,21 @@ from unittest.mock import patch, call
 import pandas
 import pytest
 
+
 @pytest.fixture
 def glmc_pattern(tmp_path):
     # typhon fileset doesn't understand the full format-specification
     # mini-language, so something like hour:>02d doesn't work...
     return str(tmp_path / "glmc-fake" /
-            "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
-            "{end_hour}{end_minute}{end_second}.nc")
+               "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
+               "{end_hour}{end_minute}{end_second}.nc")
 
 
 @pytest.fixture
 def lcfa_pattern(tmp_path):
     return str(tmp_path / "lcfa-fake" /
-            "lcfa-fake-{year}{month}{day}{hour}{minute}{second}-"
-            "{end_hour}{end_minute}{end_second}.nc")
+               "lcfa-fake-{year}{month}{day}{hour}{minute}{second}-"
+               "{end_hour}{end_minute}{end_second}.nc")
 
 
 def _mk_test_files(pattern, minutes):
@@ -27,7 +28,7 @@ def _mk_test_files(pattern, minutes):
     pat.parent.mkdir(exist_ok=True, parents=True)
     files = []
     for m in minutes:
-        #...(see line 11-12) therefore I need to pass strings here
+        # ...(see line 11-12) therefore I need to pass strings here
         p = pat.with_name(
                 pat.name.format(
                     year="1900", month="01", day="01", hour="00",
@@ -59,11 +60,11 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path):
     with patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
         # test that I'm raising a FileNotFoundError if unexpectedly no file
         # created where expected
-        with patch("fsspec.implementations.cached.WholeFileCacheFileSystem") as ficW:
+        with patch("fsspec.implementations.cached.WholeFileCacheFileSystem"):
             with pytest.raises(FileNotFoundError):
                 for _ in ensure_glm_lcfa_for_period(
-                    datetime.datetime(1900, 1, 1, 0, 0, 0),
-                    datetime.datetime(1900, 1, 1, 0, 6, 0)):
+                        datetime.datetime(1900, 1, 1, 0, 0, 0),
+                        datetime.datetime(1900, 1, 1, 0, 6, 0)):
                     pass
         files = list(ensure_glm_lcfa_for_period(
                 datetime.datetime(1900, 1, 1, 0, 0, 0),
@@ -90,11 +91,11 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path):
         assert len(files) == 0
 
 
-
 @patch("sattools.glm.run_glmtools")
 @patch("appdirs.user_cache_dir")
 @patch("s3fs.S3FileSystem")
-def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern, lcfa_files, tmp_path):
+def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern,
+                     lcfa_files, tmp_path):
     from sattools.glm import ensure_glmc_for_period
     from fsspec.implementations.local import LocalFileSystem
     au.return_value = str(tmp_path / "whole-file-cache")
@@ -106,8 +107,8 @@ def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern, lcfa_f
                 datetime.datetime(1900, 1, 1, 0, 6, 0))
         sgr.assert_has_calls(
                 [call([tmp_path / "whole-file-cache" /
-                    f"lcfa-fake-1900010100{m:>02d}00-00{m+1:>02d}00.nc"])
-                    for m in (2, 4)])
+                       f"lcfa-fake-1900010100{m:>02d}00-00{m+1:>02d}00.nc"])
+                 for m in (2, 4)])
 
 
 def test_find_coverage(glmc_pattern, glmc_files):
@@ -148,9 +149,11 @@ def test_run_glmtools(tmp_path):
         run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"])
         sr.assert_called_once_with(
             ["python",
-            "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py",
-            "--fixed_grid", "--split_events", "--goes_position", "east",
-            "--goes_sector", "conus", "--dx=2.0", "--dy=2.0", "--dt", "60", "-o",
-            "/media/nas/x21308/GLM/GLMC/1min/{start_time:%Y/%m/%d/%H}/{dataset_name}",
-            [str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")]],
-            capture_output=True, shell=False, cwd=None, timeout=120, check=True)
+             "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py",
+             "--fixed_grid", "--split_events", "--goes_position", "east",
+             "--goes_sector", "conus", "--dx=2.0", "--dy=2.0", "--dt", "60",
+             "-o", "/media/nas/x21308/GLM/GLMC/1min/"
+             "{start_time:%Y/%m/%d/%H}/{dataset_name}",
+             [str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")]],
+            capture_output=True, shell=False, cwd=None, timeout=120,
+            check=True)

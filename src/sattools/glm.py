@@ -4,20 +4,23 @@ import subprocess
 import appdirs
 import pandas
 import s3fs
-import satpy.readers
 import fsspec.implementations.cached
-#from satpy.utils import debug_on; debug_on()
 
 from typhon.files.fileset import FileSet
 
-pattern_s3_glm_lcfa = "noaa-goes16/GLM-L2-LCFA/{year}/{doy}/{hour}/OR_GLM-L2-LCFA_G16_s{year}{doy}{hour}{minute}{second}*_e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc"
+pattern_s3_glm_lcfa = (
+        "noaa-goes16/GLM-L2-LCFA/{year}/{doy}/{hour}/"
+        "OR_GLM-L2-LCFA_G16_s{year}{doy}{hour}{minute}{second}*_"
+        "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc")
 pattern_dwd_glm_glmc_basedir = "/media/nas/x21308/GLM/GLMC/1min/"
-pattern_dwd_glm_glmc = (pattern_dwd_glm_glmc_basedir +
+pattern_dwd_glm_glmc = (
+        pattern_dwd_glm_glmc_basedir +
         "{year}/{month}/{day}/{hour}/"
         "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
         "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
         "c*.nc")
 glm_script = "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py"
+
 
 def ensure_glm_lcfa_for_period(start_date, end_date):
     """Make sure GLM LCFA files for period are present locally.
@@ -77,16 +80,19 @@ def find_glmc_coverage_gaps(start_date, end_date):
     if last < end_date:
         yield pandas.Interval(last, pandas.Timestamp(end_date))
 
+
 def run_glmtools(files):
     # how to call this?  should not be needed as a subprocess, although maybe
     # advantageous to keep things separate, can I at least determine the
     # location for make_GLM_grids in a more portable manner?
-    # python ~/checkouts/glmtools/examples/grid/make_GLM_grids.py --fixed_grid --split_events --goes_position east --goes_sector conus --dx=2.0 --dy=2.0 --dt 60 -o 'GLMC/{start_time:%Y/%m/%d/%H}/{dataset_name}' /media/nas/x21308/GLM/LCFA/104/*/OR_GLM-L2-LCFA_G16_s2020104*.nc
+
     # FIXME: Surely I can use a Python API for this call...
-    cpe = subprocess.run(
+    subprocess.run(
             ["python", glm_script, "--fixed_grid", "--split_events",
-            "--goes_position", "east", "--goes_sector", "conus", "--dx=2.0",
-            "--dy=2.0", "--dt", "60", "-o",
-            pattern_dwd_glm_glmc_basedir + "{start_time:%Y/%m/%d/%H}/{dataset_name}",
-            [str(f) for f in files]],
-         capture_output=True, shell=False, cwd=None, timeout=120, check=True)
+             "--goes_position", "east", "--goes_sector", "conus", "--dx=2.0",
+             "--dy=2.0", "--dt", "60", "-o",
+             pattern_dwd_glm_glmc_basedir +
+             "{start_time:%Y/%m/%d/%H}/{dataset_name}",
+             [str(f) for f in files]],
+            capture_output=True, shell=False, cwd=None, timeout=120,
+            check=True)
