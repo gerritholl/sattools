@@ -1,4 +1,5 @@
 import pathlib
+import subprocess
 
 import appdirs
 import pandas
@@ -10,14 +11,16 @@ import fsspec.implementations.cached
 from typhon.files.fileset import FileSet
 
 pattern_s3_glm_lcfa = "noaa-goes16/GLM-L2-LCFA/{year}/{doy}/{hour}/OR_GLM-L2-LCFA_G16_s{year}{doy}{hour}{minute}{second}*_e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc"
-pattern_dwd_glm_glmc = (
-        "/media/nas/x21308/GLM/GLMC/1min/{year}/{month}/{day}/{hour}/"
+pattern_dwd_glm_glmc_basedir = "/media/nas/x21308/GLM/GLMC/1min/"
+pattern_dwd_glm_glmc = (pattern_dwd_glm_glmc_basedir +
+        "{year}/{month}/{day}/{hour}/"
         "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
         "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
         "c*.nc")
+glm_script = "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py"
 
 def ensure_glm_lcfa_for_period(start_date, end_date):
-    """Make sure GLM LCFA files for period are present.
+    """Make sure GLM LCFA files for period are present locally.
 
     Yields the local paths for the (cached or downloaded) files.
     """
@@ -33,7 +36,9 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
             same_names=True)
 
     glm_lcfa = FileSet(path=pattern_s3_glm_lcfa, name="glm_lcfa", fs=s3)
-    for f in glm_lcfa.find(start_date, end_date):
+    for f in glm_lcfa.find(start_date, end_date, no_files_error=False):
+        if not f.times[1] > start_date:  # typhon uses closed intervals
+            continue
         with wfcfs.open(f, mode="rb"):  # force download
             exp = pathlib.Path(cachedir) / pathlib.Path(f).name
             # Is this guaranteed?  See
@@ -46,7 +51,6 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
 def ensure_glmc_for_period(start_date, end_date):
     """Get gridded GLM for period, unless already existing.
     """
-    # find uncovered times, can pandas help?  Or pyinterval?
     for gap in find_glmc_coverage_gaps(start_date, end_date):
         files = list(ensure_glm_lcfa_for_period(gap.left, gap.right))
         run_glmtools(files)
@@ -78,4 +82,11 @@ def run_glmtools(files):
     # advantageous to keep things separate, can I at least determine the
     # location for make_GLM_grids in a more portable manner?
     # python ~/checkouts/glmtools/examples/grid/make_GLM_grids.py --fixed_grid --split_events --goes_position east --goes_sector conus --dx=2.0 --dy=2.0 --dt 60 -o 'GLMC/{start_time:%Y/%m/%d/%H}/{dataset_name}' /media/nas/x21308/GLM/LCFA/104/*/OR_GLM-L2-LCFA_G16_s2020104*.nc
-    pass
+    # FIXME: Surely I can use a Python API for this call...
+    cpe = subprocess.run(
+            ["python", glm_script, "--fixed_grid", "--split_events",
+            "--goes_position", "east", "--goes_sector", "conus", "--dx=2.0",
+            "--dy=2.0", "--dt", "60", "-o",
+            pattern_dwd_glm_glmc_basedir + "{start_time:%Y/%m/%d/%H}/{dataset_name}",
+            [str(f) for f in files]],
+         capture_output=True, shell=False, cwd=None, timeout=120, check=True)
