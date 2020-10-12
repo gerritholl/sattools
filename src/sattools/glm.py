@@ -39,7 +39,7 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
             same_names=True)
 
     glm_lcfa = FileSet(path=pattern_s3_glm_lcfa, name="glm_lcfa", fs=s3)
-    for f in glm_lcfa.find(start_date, end_date, no_files_error=False):
+    for f in glm_lcfa.find(start_date, end_date):
         if not f.times[1] > start_date:  # typhon uses closed intervals
             continue
         with wfcfs.open(f, mode="rb"):  # force download
