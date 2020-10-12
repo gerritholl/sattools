@@ -53,7 +53,7 @@ def lcfa_files(lcfa_pattern):
 
 @patch("appdirs.user_cache_dir")
 @patch("s3fs.S3FileSystem")
-def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path):
+def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog):
     from sattools.glm import ensure_glm_lcfa_for_period
     from fsspec.implementations.local import LocalFileSystem
     from typhon.files.fileset import NoFilesError
@@ -68,9 +68,15 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path):
                         datetime.datetime(1900, 1, 1, 0, 0, 0),
                         datetime.datetime(1900, 1, 1, 0, 6, 0)):
                     pass
-        files = list(ensure_glm_lcfa_for_period(
-                datetime.datetime(1900, 1, 1, 0, 0, 0),
-                datetime.datetime(1900, 1, 1, 0, 6, 0)))
+        with caplog.at_level(logging.DEBUG):
+            files = list(ensure_glm_lcfa_for_period(
+                    datetime.datetime(1900, 1, 1, 0, 0, 0),
+                    datetime.datetime(1900, 1, 1, 0, 6, 0)))
+        assert (f"Downloading {tmp_path!s}/lcfa-fake/"
+                f"lcfa-fake-19000101000000-000100.nc" in caplog.text)
+        assert (f"Writing to {tmp_path!s}/"
+                f"whole-file-cache/lcfa-fake-19000101000000-000100.nc" in
+                caplog.text)
         assert len(files) == 6
         assert files == [
                 pathlib.Path(

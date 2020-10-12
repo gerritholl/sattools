@@ -31,6 +31,9 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
     Yields the local paths for the (cached or downloaded) files.
     """
 
+    logger.debug(
+            "Ensuring local LCFA availability "
+            f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
     cachedir = appdirs.user_cache_dir("GLM-file-cache")
     s3 = s3fs.S3FileSystem(anon=True)
     wfcfs = fsspec.implementations.cached.WholeFileCacheFileSystem(
@@ -45,8 +48,10 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
     for f in glm_lcfa.find(start_date, end_date):
         if not f.times[1] > start_date:  # typhon uses closed intervals
             continue
+        logger.debug(f"Downloading {f!s}")
         with wfcfs.open(f, mode="rb"):  # force download
             exp = pathlib.Path(cachedir) / pathlib.Path(f).name
+            logger.debug(f"Writing to {exp!s}")
             # Is this guaranteed?  See
             # https://stackoverflow.com/q/64261276/974555
             if not exp.exists():
@@ -57,9 +62,16 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
 def ensure_glmc_for_period(start_date, end_date):
     """Get gridded GLM for period, unless already existing.
     """
+    logger.debug(
+            "Locating GLMC gaps between "
+            f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
     for gap in find_glmc_coverage_gaps(start_date, end_date):
+        logger.debug(
+                "Found gap between "
+                f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
         files = list(ensure_glm_lcfa_for_period(gap.left, gap.right))
         run_glmtools(files)
+    logger.debug("GLMC should now be fully covered")
     # there should be no more gaps now!
     for gap in find_glmc_coverage_gaps(start_date, end_date):
         raise RuntimeError(
