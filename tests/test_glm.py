@@ -103,7 +103,7 @@ def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern,
     sS.return_value = LocalFileSystem()
     with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern), \
          patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
-        with pytest.raises(RuntimeError):  # files not created when just testing
+        with pytest.raises(RuntimeError):  # files not created when testing
             ensure_glmc_for_period(
                     datetime.datetime(1900, 1, 1, 0, 0, 0),
                     datetime.datetime(1900, 1, 1, 0, 6, 0))

@@ -64,6 +64,7 @@ def ensure_glmc_for_period(start_date, end_date):
                 "data still appear to be missing for "
                 "{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
 
+
 def find_glmc_coverage(start_date, end_date):
     """Yield intervals corresponding to GLMC coverage.
     """
