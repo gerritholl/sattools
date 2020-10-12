@@ -98,6 +98,6 @@ def run_glmtools(files):
              "--dy=2.0", "--dt", "60", "-o",
              pattern_dwd_glm_glmc_basedir +
              "{start_time:%Y/%m/%d/%H}/{dataset_name}",
-             [str(f) for f in files]],
+             *(str(f) for f in files)],
             capture_output=True, shell=False, cwd=None, timeout=120,
             check=True)

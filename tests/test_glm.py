@@ -55,6 +55,7 @@ def lcfa_files(lcfa_pattern):
 def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path):
     from sattools.glm import ensure_glm_lcfa_for_period
     from fsspec.implementations.local import LocalFileSystem
+    from typhon.files.fileset import NoFilesError
     au.return_value = str(tmp_path / "whole-file-cache")
     sS.return_value = LocalFileSystem()
     with patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
@@ -85,10 +86,10 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path):
                 pathlib.Path(
                     tmp_path / "whole-file-cache" /
                     "lcfa-fake-19000101000100-000200.nc")]
-        files = list(ensure_glm_lcfa_for_period(
-                datetime.datetime(1900, 1, 2, 0, 0, 0),
-                datetime.datetime(1900, 1, 2, 0, 1, 0)))
-        assert len(files) == 0
+        with pytest.raises(NoFilesError):
+            next(ensure_glm_lcfa_for_period(
+                    datetime.datetime(1900, 1, 2, 0, 0, 0),
+                    datetime.datetime(1900, 1, 2, 0, 1, 0)))
 
 
 @patch("sattools.glm.run_glmtools")
@@ -160,6 +161,6 @@ def test_run_glmtools(tmp_path):
              "--goes_sector", "conus", "--dx=2.0", "--dy=2.0", "--dt", "60",
              "-o", "/media/nas/x21308/GLM/GLMC/1min/"
              "{start_time:%Y/%m/%d/%H}/{dataset_name}",
-             [str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")]],
+             str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")],
             capture_output=True, shell=False, cwd=None, timeout=120,
             check=True)
