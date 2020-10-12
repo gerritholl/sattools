@@ -127,6 +127,11 @@ def test_find_coverage(glmc_pattern, glmc_files):
                             pandas.Timestamp("1900-01-01T00:04:00")),
             pandas.Interval(pandas.Timestamp("1900-01-01T00:05:00"),
                             pandas.Timestamp("1900-01-01T00:06:00"))]
+    with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern):
+        covered = list(find_glmc_coverage(
+            datetime.datetime(1900, 1, 2, 3, 4, 5),
+            datetime.datetime(1900, 5, 4, 3, 2, 1)))
+        assert covered == []
 
 
 def test_find_gaps(glmc_pattern, glmc_files):

@@ -68,7 +68,7 @@ def find_glmc_coverage(start_date, end_date):
     """Yield intervals corresponding to GLMC coverage.
     """
     glmc = FileSet(path=pattern_dwd_glm_glmc, name="glmc")
-    for file_info in glmc.find(start_date, end_date):
+    for file_info in glmc.find(start_date, end_date, no_files_error=False):
         yield pandas.Interval(
                 pandas.Timestamp(file_info.times[0]),
                 pandas.Timestamp(file_info.times[1]))
