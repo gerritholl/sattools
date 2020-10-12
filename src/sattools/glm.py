@@ -5,6 +5,7 @@ import appdirs
 import pandas
 import s3fs
 import fsspec.implementations.cached
+import logging
 
 from typhon.files.fileset import FileSet
 
@@ -20,6 +21,8 @@ pattern_dwd_glm_glmc = (
         "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
         "c*.nc")
 glm_script = "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py"
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_glm_lcfa_for_period(start_date, end_date):
@@ -93,6 +96,7 @@ def run_glmtools(files):
     # location for make_GLM_grids in a more portable manner?
 
     # FIXME: Surely I can use a Python API for this call...
+    logger.info("Running glmtools for " + ", ".join(str(f) for f in files))
     subprocess.run(
             ["python", glm_script, "--fixed_grid", "--split_events",
              "--goes_position", "east", "--goes_sector", "conus", "--dx=2.0",

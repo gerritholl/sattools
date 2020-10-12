@@ -1,5 +1,6 @@
 import pathlib
 import datetime
+import logging
 
 from unittest.mock import patch, call
 
@@ -150,10 +151,13 @@ def test_find_gaps(glmc_pattern, glmc_files):
                             pandas.Timestamp("1900-01-01T00:08:00"))]
 
 
-def test_run_glmtools(tmp_path):
+def test_run_glmtools(tmp_path, caplog):
     from sattools.glm import run_glmtools
     with patch("subprocess.run") as sr:
-        run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"])
+        with caplog.at_level(logging.INFO):
+            run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"])
+            assert (f"Running glmtools for {(tmp_path / 'lcfa1.nc')!s}, "
+                    f"{(tmp_path / 'lcfa2.nc')!s}" in caplog.text)
         sr.assert_called_once_with(
             ["python",
              "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py",
