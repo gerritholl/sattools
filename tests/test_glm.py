@@ -102,9 +102,10 @@ def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern,
     sS.return_value = LocalFileSystem()
     with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern), \
          patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
-        ensure_glmc_for_period(
-                datetime.datetime(1900, 1, 1, 0, 0, 0),
-                datetime.datetime(1900, 1, 1, 0, 6, 0))
+        with pytest.raises(RuntimeError):  # files not created when just testing
+            ensure_glmc_for_period(
+                    datetime.datetime(1900, 1, 1, 0, 0, 0),
+                    datetime.datetime(1900, 1, 1, 0, 6, 0))
         sgr.assert_has_calls(
                 [call([tmp_path / "whole-file-cache" /
                        f"lcfa-fake-1900010100{m:>02d}00-00{m+1:>02d}00.nc"])

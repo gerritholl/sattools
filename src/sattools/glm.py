@@ -57,7 +57,12 @@ def ensure_glmc_for_period(start_date, end_date):
     for gap in find_glmc_coverage_gaps(start_date, end_date):
         files = list(ensure_glm_lcfa_for_period(gap.left, gap.right))
         run_glmtools(files)
-
+    # there should be no more gaps now!
+    for gap in find_glmc_coverage_gaps(start_date, end_date):
+        raise RuntimeError(
+                "I have tried to ensure GLMC by running glmtools, but "
+                "data still appear to be missing for "
+                "{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
 
 def find_glmc_coverage(start_date, end_date):
     """Yield intervals corresponding to GLMC coverage.
