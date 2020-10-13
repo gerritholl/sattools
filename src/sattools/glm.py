@@ -61,6 +61,8 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
 
 def ensure_glmc_for_period(start_date, end_date):
     """Get gridded GLM for period, unless already existing.
+
+    Yields resulting GLMC files.
     """
     logger.debug(
             "Locating GLMC gaps between "
@@ -78,6 +80,8 @@ def ensure_glmc_for_period(start_date, end_date):
                 "I have tried to ensure GLMC by running glmtools, but "
                 "data still appear to be missing for "
                 "{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
+    glmc = FileSet(path=pattern_dwd_glm_glmc, name="glmc")
+    yield from glmc.find(start_date, end_date, no_files_error=True)
 
 
 def find_glmc_coverage(start_date, end_date):
@@ -93,7 +97,7 @@ def find_glmc_coverage(start_date, end_date):
 def find_glmc_coverage_gaps(start_date, end_date):
     """Yield intervals not covered by GLMC in period.
     """
-    last = start_date
+    last = pandas.Timestamp(start_date)
     for iv in find_glmc_coverage(start_date, end_date):
         if iv.left > last:
             yield pandas.Interval(last, iv.left)

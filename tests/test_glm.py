@@ -106,18 +106,33 @@ def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern,
                      lcfa_files, tmp_path):
     from sattools.glm import ensure_glmc_for_period
     from fsspec.implementations.local import LocalFileSystem
+    from typhon.files.fileset import FileInfo
     au.return_value = str(tmp_path / "whole-file-cache")
     sS.return_value = LocalFileSystem()
     with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern), \
          patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
         with pytest.raises(RuntimeError):  # files not created when testing
-            ensure_glmc_for_period(
+            next(ensure_glmc_for_period(
                     datetime.datetime(1900, 1, 1, 0, 0, 0),
-                    datetime.datetime(1900, 1, 1, 0, 6, 0))
+                    datetime.datetime(1900, 1, 1, 0, 6, 0)))
         sgr.assert_has_calls(
                 [call([tmp_path / "whole-file-cache" /
                        f"lcfa-fake-1900010100{m:>02d}00-00{m+1:>02d}00.nc"])
                  for m in (2, 4)])
+
+        def fake_run(files):
+            """Create files when testing."""
+            _mk_test_files(glmc_pattern, (0, 1, 2, 3, 4, 5, 6))
+        sgr.side_effect = fake_run
+        g = ensure_glmc_for_period(
+                datetime.datetime(1900, 1, 1, 0, 0, 0),
+                datetime.datetime(1900, 1, 1, 0, 6, 0))
+        fi = next(g)
+        assert isinstance(fi, FileInfo)
+        assert fi.path == str(tmp_path / "glmc-fake" /
+               "glmc-fake-19000101000000-000100.nc")
+        assert fi.times == [datetime.datetime(1900, 1, 1, 0, 0),
+                            datetime.datetime(1900, 1, 1, 0, 1)]
 
 
 def test_find_coverage(glmc_pattern, glmc_files):
@@ -148,13 +163,23 @@ def test_find_gaps(glmc_pattern, glmc_files):
         gaps = list(find_glmc_coverage_gaps(
             datetime.datetime(1900, 1, 1, 0, 0),
             datetime.datetime(1900, 1, 1, 0, 8)))
-    assert gaps == [
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:02:00"),
-                            pandas.Timestamp("1900-01-01T00:03:00")),
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:04:00"),
-                            pandas.Timestamp("1900-01-01T00:05:00")),
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:06:00"),
-                            pandas.Timestamp("1900-01-01T00:08:00"))]
+        assert gaps == [
+                pandas.Interval(pandas.Timestamp("1900-01-01T00:02:00"),
+                                pandas.Timestamp("1900-01-01T00:03:00")),
+                pandas.Interval(pandas.Timestamp("1900-01-01T00:04:00"),
+                                pandas.Timestamp("1900-01-01T00:05:00")),
+                pandas.Interval(pandas.Timestamp("1900-01-01T00:06:00"),
+                                pandas.Timestamp("1900-01-01T00:08:00"))]
+        gaps = list(find_glmc_coverage_gaps(
+            datetime.datetime(1900, 1, 2, 0, 0),
+            datetime.datetime(1900, 1, 2, 0, 8)))
+        assert gaps == [
+                pandas.Interval(pandas.Timestamp("1900-01-02T00:00:00"),
+                                pandas.Timestamp("1900-01-02T00:08:00"))]
+        gaps = list(find_glmc_coverage_gaps(
+            datetime.datetime(1900, 1, 1, 0, 0),
+            datetime.datetime(1900, 1, 1, 0, 2)))
+        assert list(gaps) == []
 
 
 def test_run_glmtools(tmp_path, caplog):
