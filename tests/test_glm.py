@@ -6,49 +6,7 @@ from unittest.mock import patch, call
 
 import pandas
 import pytest
-
-
-@pytest.fixture
-def glmc_pattern(tmp_path):
-    # typhon fileset doesn't understand the full format-specification
-    # mini-language, so something like hour:>02d doesn't work...
-    return str(tmp_path / "glmc-fake" /
-               "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
-               "{end_hour}{end_minute}{end_second}.nc")
-
-
-@pytest.fixture
-def lcfa_pattern(tmp_path):
-    return str(tmp_path / "lcfa-fake" /
-               "lcfa-fake-{year}{month}{day}{hour}{minute}{second}-"
-               "{end_hour}{end_minute}{end_second}.nc")
-
-
-def _mk_test_files(pattern, minutes):
-    pat = pathlib.Path(pattern)
-    pat.parent.mkdir(exist_ok=True, parents=True)
-    files = []
-    for m in minutes:
-        # ...(see line 11-12) therefore I need to pass strings here
-        p = pat.with_name(
-                pat.name.format(
-                    year="1900", month="01", day="01", hour="00",
-                    minute=f"{m:>02d}", second="00",
-                    end_hour="00", end_minute=f"{m+1:>02d}",
-                    end_second="00"))
-        p.touch()
-        files.append(p)
-    return files
-
-
-@pytest.fixture
-def glmc_files(glmc_pattern):
-    return _mk_test_files(glmc_pattern, (0, 1, 3, 5))
-
-
-@pytest.fixture
-def lcfa_files(lcfa_pattern):
-    return _mk_test_files(lcfa_pattern, (0, 1, 2, 3, 4, 5))
+from conftest import _mk_test_files
 
 
 @patch("appdirs.user_cache_dir")

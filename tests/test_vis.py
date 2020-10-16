@@ -1,7 +1,9 @@
 """Test visualisation routines
 """
 
-from unittest.mock import patch, MagicMock
+import datetime
+
+from unittest.mock import patch, MagicMock, call, ANY
 
 import pytest
 import pyresample
@@ -95,3 +97,47 @@ def test_flatten_areas():
     assert all(isinstance(ar, pyresample.geometry.AreaDefinition)
                for ar in flat)
     assert len(flat) == 8
+
+
+@patch("s3fs.S3FileSystem")
+@patch("subprocess.run")
+@patch("satpy.multiscene.Scene")
+def test_show_video_from_times(smS, sr, sS, monkeypatch, tmp_path,
+        better_glmc_pattern, more_glmc_files, fakearea):
+    from sattools.vis import show_video_abi_glm_times
+    from fsspec.implementations.local import LocalFileSystem
+    from fsspec.implementations.cached import CachingFileSystem
+    sS.return_value = LocalFileSystem()
+
+    monkeypatch.chdir(tmp_path)
+    for i in range(3):
+        tf = (tmp_path / "noaa-goes16" / "ABI-L1b-RadC" / "1900" / "001" / "00"
+                / "OR_ABI-L1b-RadC-M6C14_G16_"
+                f"s19000010{i:>02d}0000_e19000010{i+1:>02d}0000_"
+                "c20303662359590.nc")
+        tf.parent.mkdir(exist_ok=True, parents=True)
+        tf.touch()
+
+    smS.return_value.__getitem__.return_value.attrs.__getitem__.return_value = fakearea
+    with patch("sattools.glm.pattern_dwd_glm_glmc", better_glmc_pattern):
+        show_video_abi_glm_times(
+                datetime.datetime(1900, 1, 1, 0, 0),
+                datetime.datetime(1900, 1, 1, 0, 20))
+    exp_calls = [
+            call(
+                filenames={
+                    "glm_l2": [str(tmp_path / "noaa-goes16" / "GLM-L2-GLMC" /
+                        "1900" / "001" / "00" / "OR_GLM-L2-GLMC-M3_G16_"
+                        f"s190000100{i:d}0000_e190000100{i:d}1000_c20303662359590.nc")],
+                    "abi_l1b": [str(tmp_path / "noaa-goes16" / "ABI-L1b-RadC" /
+                        "1900" / "001" / "00" / "OR_ABI-L1b-RadC-M6C14_G16_"
+                        f"s190000100{i:d}0000_e190000100{i+1:d}0000_c20303662359590.nc")]},
+                reader_kwargs=ANY)
+            for i in (0, 1)]
+    smS.assert_has_calls(exp_calls, any_order=True)
+    assert isinstance(
+        smS.call_args_list[0][1]["reader_kwargs"]["glm_l2"]["file_system"],
+        LocalFileSystem)
+    assert isinstance(
+        smS.call_args_list[0][1]["reader_kwargs"]["abi_l1b"]["file_system"],
+        CachingFileSystem)
