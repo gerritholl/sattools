@@ -98,7 +98,6 @@ def find_glmc_coverage_gaps(start_date, end_date):
     """Yield intervals not covered by GLMC in period.
     """
     last = pandas.Timestamp(start_date)
-    #breakpoint()
     for iv in find_glmc_coverage(start_date, end_date):
         if iv.left > last:
             yield pandas.Interval(last, iv.left)

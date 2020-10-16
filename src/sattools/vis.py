@@ -188,7 +188,8 @@ def show_video_abi_glm_times(start_date, end_date):
     """Show a ABI/GLM video between start_date and end_date.
     """
     glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
-    (abi_fs, abi_files) = abi.get_fs_and_files(start_date, end_date, sector="C")
+    (abi_fs, abi_files) = abi.get_fs_and_files(
+            start_date, end_date, sector="C")
     lfs = fsspec.implementations.local.LocalFileSystem()
     (ms, mr) = scutil.get_resampled_multiscene(
             glmc_files + abi_files,
