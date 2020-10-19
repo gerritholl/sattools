@@ -6,10 +6,14 @@ import fsspec.implementations.cached
 from typhon.files.fileset import FileSet
 
 
-def get_fs_and_files(start_date, end_date, sector="F"):
+def get_fs_and_files(start_date, end_date, sector="F", chanstr="14"):
     """Return filesystem object and files for ABI for period.
 
     Sector can be "C", "F", "M1", or "M2".
+
+    Chanstr is a string substituted into the globbing, it can either be a
+    string representing a channel (defaults to "14") or something containing a
+    wildcard or other globbing characters.
     """
 
     cachedir = appdirs.user_cache_dir("ABI-block-cache")
@@ -29,7 +33,7 @@ def get_fs_and_files(start_date, end_date, sector="F"):
     abi_fileset = FileSet(
             path=f"noaa-goes16/ABI-L1b-Rad{sector:s}/"
                  "{year}/{doy}/{hour}/"
-                 f"OR_ABI-L1b-Rad{sector:s}-M6C*_G16_"
+                 f"OR_ABI-L1b-Rad{sector:s}-M6C{chanstr:s}_G16_"
                  "s{year}{doy}{hour}{minute}{second}*_e{end_year}{end_doy}"
                  "{end_hour}{end_minute}{end_second}*_c*.nc",
             name="abi",
