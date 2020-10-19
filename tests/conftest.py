@@ -9,6 +9,7 @@
 
 import datetime
 import copy
+import pathlib
 
 import pytest
 import satpy
@@ -104,3 +105,62 @@ def fake_multiscene3(fake_multiscene2):
         fms.scenes[2][k].attrs["area"] = fake_multiscene2.scenes[0][k].\
                 attrs["area"]
     return fms
+
+
+@pytest.fixture
+def glmc_pattern(tmp_path):
+    # typhon fileset doesn't understand the full format-specification
+    # mini-language, so something like hour:>02d doesn't work...
+    return str(tmp_path / "glmc-fake" /
+               "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
+               "{end_hour}{end_minute}{end_second}.nc")
+
+
+@pytest.fixture
+def better_glmc_pattern(tmp_path):
+    # typhon fileset doesn't understand the full format-specification
+    # mini-language, so something like hour:>02d doesn't work...
+    return str(tmp_path / "noaa-goes16" / "GLM-L2-GLMC" / "{year}" / "{doy}"
+               / "{hour}" /
+               "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}0_"
+               "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}0_"
+               "c20403662359590.nc")
+
+
+@pytest.fixture
+def lcfa_pattern(tmp_path):
+    return str(tmp_path / "lcfa-fake" /
+               "lcfa-fake-{year}{month}{day}{hour}{minute}{second}-"
+               "{end_hour}{end_minute}{end_second}.nc")
+
+
+def _mk_test_files(pattern, minutes):
+    pat = pathlib.Path(pattern)
+    files = []
+    for m in minutes:
+        # ...(see line 11-12) therefore I need to pass strings here
+        p = pathlib.Path(str(pat).format(
+                    year="1900", month="01", day="01", hour="00",
+                    minute=f"{m:>02d}", second="00",
+                    end_year="1900", end_month="01", end_day="01",
+                    end_hour="00", end_minute=f"{m+1:>02d}",
+                    end_second="00", doy="001", end_doy="001"))
+        p.parent.mkdir(exist_ok=True, parents=True)
+        p.touch()
+        files.append(p)
+    return files
+
+
+@pytest.fixture
+def glmc_files(glmc_pattern):
+    return _mk_test_files(glmc_pattern, (0, 1, 3, 5))
+
+
+@pytest.fixture
+def lcfa_files(lcfa_pattern):
+    return _mk_test_files(lcfa_pattern, (0, 1, 2, 3, 4, 5))
+
+
+@pytest.fixture
+def more_glmc_files(better_glmc_pattern):
+    return _mk_test_files(better_glmc_pattern, range(30))

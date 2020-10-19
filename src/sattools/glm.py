@@ -79,7 +79,7 @@ def ensure_glmc_for_period(start_date, end_date):
         raise RuntimeError(
                 "I have tried to ensure GLMC by running glmtools, but "
                 "data still appear to be missing for "
-                "{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
+                f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
     glmc = FileSet(path=pattern_dwd_glm_glmc, name="glmc")
     yield from glmc.find(start_date, end_date, no_files_error=True)
 
@@ -120,5 +120,5 @@ def run_glmtools(files):
              pattern_dwd_glm_glmc_basedir +
              "{start_time:%Y/%m/%d/%H}/{dataset_name}",
              *(str(f) for f in files)],
-            capture_output=True, shell=False, cwd=None, timeout=120,
+            capture_output=True, shell=False, cwd=None, timeout=900,
             check=True)

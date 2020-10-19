@@ -1,7 +1,9 @@
 """Test visualisation routines
 """
 
-from unittest.mock import patch, MagicMock
+import datetime
+
+from unittest.mock import patch, MagicMock, ANY
 
 import pytest
 import pyresample
@@ -95,3 +97,55 @@ def test_flatten_areas():
     assert all(isinstance(ar, pyresample.geometry.AreaDefinition)
                for ar in flat)
     assert len(flat) == 8
+
+
+@patch("s3fs.S3FileSystem")
+@patch("subprocess.run")
+@patch("satpy.multiscene.Scene")
+@patch("sattools.vis.show_video_abi_glm")
+def test_show_video_from_times(
+        svs, smS, sr, sS, monkeypatch, tmp_path,
+        better_glmc_pattern, more_glmc_files, fakearea):
+    from sattools.vis import show_video_abi_glm_times
+    from fsspec.implementations.local import LocalFileSystem
+    from fsspec.implementations.cached import CachingFileSystem
+    sS.return_value = LocalFileSystem()
+
+    monkeypatch.chdir(tmp_path)
+    for i in range(3):
+        for s in ("M1", "M2"):
+            tf = (tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{s:s}" / "1900" /
+                  "001" / "00" / f"OR_ABI-L1b-Rad{s:s}-M6C14_G16_"
+                  f"s19000010{i:>02d}0000_e19000010{i+1:>02d}0000_"
+                  "c20403662359590.nc")
+            tf.parent.mkdir(exist_ok=True, parents=True)
+            tf.touch()
+
+    smS.return_value.__getitem__.return_value.attrs.\
+        __getitem__.return_value = fakearea
+    with patch("sattools.glm.pattern_dwd_glm_glmc", better_glmc_pattern):
+        show_video_abi_glm_times(
+                datetime.datetime(1900, 1, 1, 0, 0),
+                datetime.datetime(1900, 1, 1, 0, 20),
+                out_dir=tmp_path / "show-vid")
+    exp_args = [
+            str(tmp_path / "noaa-goes16" / "GLM-L2-GLMC" / "1900" / "001" /
+                "00" / f"OR_GLM-L2-GLMC-M3_G16_s190000100{i:>02d}000_"
+                f"e190000100{i+1:>02d}000_c20403662359590.nc")
+            for i in range(20)] + [
+            str(tmp_path / "noaa-goes16" / f"ABI-L1b-RadM{j:d}" / "1900" /
+                "001" / "00" / f"OR_ABI-L1b-RadM{j:d}-M6C14_G16_"
+                f"s190000100{i:>01d}0000_"
+                f"e190000100{i+1:>01d}0000_c20403662359590.nc")
+            for i in range(2) for j in range(1, 3)]
+    svs.assert_called_once_with(exp_args, tmp_path/"show-vid",
+                                scene_kwargs=ANY)
+
+    assert isinstance(
+        svs.call_args[1]["scene_kwargs"]["reader_kwargs"]["glm_l2"]
+                        ["file_system"],
+        LocalFileSystem)
+    assert isinstance(
+        svs.call_args[1]["scene_kwargs"]["reader_kwargs"]["abi_l1b"]
+                        ["file_system"],
+        CachingFileSystem)

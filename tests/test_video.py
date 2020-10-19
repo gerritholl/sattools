@@ -36,6 +36,7 @@ def test_main(fpvp, sMf, fake_multiscene2, fake_multiscene3, tmp_path):
             reader=["glm_l2", "abi_l1b"],
             ensure_all_readers=True,
             group_keys=["start_time"],
+            scene_kwargs={},
             time_threshold=35)
     fake_multiscene3.save_animation.assert_called_once()
     fake_multiscene3.scenes[2].save_datasets.assert_called_once()

@@ -10,7 +10,8 @@ from . import area
 logger = logging.getLogger(__name__)
 
 
-def get_resampled_multiscene(files, reader, load_first, load_next):
+def get_resampled_multiscene(files, reader, load_first, load_next,
+                             scene_kwargs={}):
     """Get a multiscene resampled to the area covering all scenes in it.
     """
 
@@ -19,6 +20,7 @@ def get_resampled_multiscene(files, reader, load_first, load_next):
             [str(x) for x in files],
             reader=["glm_l2", "abi_l1b"],
             ensure_all_readers=True,
+            scene_kwargs=scene_kwargs,
             group_keys=["start_time"],
             time_threshold=35)  # every 10 minutes M1 starts 3 seconds late
     ms.load([load_first])
