@@ -124,7 +124,7 @@ def better_glmc_pattern(tmp_path):
                / "{hour}" /
                "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}0_"
                "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}0_"
-               "c20303662359590.nc")
+               "c20403662359590.nc")
 
 
 @pytest.fixture

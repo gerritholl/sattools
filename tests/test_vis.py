@@ -3,7 +3,7 @@
 
 import datetime
 
-from unittest.mock import patch, MagicMock, call, ANY
+from unittest.mock import patch, MagicMock, ANY
 
 import pytest
 import pyresample
@@ -102,8 +102,9 @@ def test_flatten_areas():
 @patch("s3fs.S3FileSystem")
 @patch("subprocess.run")
 @patch("satpy.multiscene.Scene")
+@patch("sattools.vis.show_video_abi_glm")
 def test_show_video_from_times(
-        smS, sr, sS, monkeypatch, tmp_path,
+        svs, smS, sr, sS, monkeypatch, tmp_path,
         better_glmc_pattern, more_glmc_files, fakearea):
     from sattools.vis import show_video_abi_glm_times
     from fsspec.implementations.local import LocalFileSystem
@@ -115,7 +116,7 @@ def test_show_video_from_times(
         tf = (tmp_path / "noaa-goes16" / "ABI-L1b-RadC" / "1900" / "001" / "00"
               / "OR_ABI-L1b-RadC-M6C14_G16_"
               f"s19000010{i:>02d}0000_e19000010{i+1:>02d}0000_"
-              "c20303662359590.nc")
+              "c20403662359590.nc")
         tf.parent.mkdir(exist_ok=True, parents=True)
         tf.touch()
 
@@ -124,25 +125,25 @@ def test_show_video_from_times(
     with patch("sattools.glm.pattern_dwd_glm_glmc", better_glmc_pattern):
         show_video_abi_glm_times(
                 datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 0, 20))
-    exp_calls = [
-            call(
-                filenames={
-                    "glm_l2": [str(tmp_path / "noaa-goes16" / "GLM-L2-GLMC" /
-                                   "1900" / "001" / "00" / "OR_GLM-L2-GLMC-M3_"
-                                   f"G16_s190000100{i:d}0000_"
-                                   f"e190000100{i:d}1000_c20303662359590.nc")],
-                    "abi_l1b": [str(tmp_path / "noaa-goes16" / "ABI-L1b-RadC" /
-                                    "1900" / "001" / "00" / "OR_ABI-L1b-RadC-"
-                                    f"M6C14_G16_s190000100{i:d}0000_"
-                                    f"e190000100{i+1:d}0000_"
-                                    "c20303662359590.nc")]},
-                reader_kwargs=ANY)
-            for i in (0, 1)]
-    smS.assert_has_calls(exp_calls, any_order=True)
+                datetime.datetime(1900, 1, 1, 0, 20),
+                out_dir=tmp_path / "show-vid")
+    exp_args = [
+            str(tmp_path / "noaa-goes16" / "GLM-L2-GLMC" / "1900" / "001" /
+                "00" / f"OR_GLM-L2-GLMC-M3_G16_s190000100{i:>02d}000_"
+                f"e190000100{i+1:>02d}000_c20403662359590.nc")
+            for i in range(20)] + [
+            str(tmp_path / "noaa-goes16" / "ABI-L1b-RadC" / "1900" / "001" /
+                "00" / f"OR_ABI-L1b-RadC-M6C14_G16_s190000100{i:>01d}0000_"
+                f"e190000100{i+1:>01d}0000_c20403662359590.nc")
+            for i in range(2)]
+    svs.assert_called_once_with(exp_args, tmp_path/"show-vid",
+                                scene_kwargs=ANY)
+
     assert isinstance(
-        smS.call_args_list[0][1]["reader_kwargs"]["glm_l2"]["file_system"],
+        svs.call_args[1]["scene_kwargs"]["reader_kwargs"]["glm_l2"]
+                        ["file_system"],
         LocalFileSystem)
     assert isinstance(
-        smS.call_args_list[0][1]["reader_kwargs"]["abi_l1b"]["file_system"],
+        svs.call_args[1]["scene_kwargs"]["reader_kwargs"]["abi_l1b"]
+                        ["file_system"],
         CachingFileSystem)

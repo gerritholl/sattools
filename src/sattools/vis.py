@@ -158,7 +158,8 @@ def show_video_abi_glm(
         files, out_dir,
         img_out="{name:s}-{start_time:%Y%m%d_%H%M}.tiff",
         vid_out="{name:s}-{start_time:%Y%m%d_%H%M}-"
-                "{end_time:%Y%m%d_%H%M}.mp4"):
+                "{end_time:%Y%m%d_%H%M}.mp4",
+        scene_kwargs={}):
     """Show a video.
 
     Show a video with ABI MESO and GLM L2 C14_flash_extent_density.
@@ -168,7 +169,8 @@ def show_video_abi_glm(
             files,
             reader=["glm_l2", "abi_l1b"],
             load_first="C14",
-            load_next=["C14_flash_extent_density"])
+            load_next=["C14_flash_extent_density"],
+            scene_kwargs=scene_kwargs)
 
     logger.info("Making an image")
     for (sc2, sc3) in zip(ms.scenes, mr.scenes):
@@ -184,18 +186,16 @@ def show_video_abi_glm(
     mr.save_animation(str(out_dir / vid_out), enh_args=enh_args)
 
 
-def show_video_abi_glm_times(start_date, end_date):
+def show_video_abi_glm_times(start_date, end_date, out_dir):
     """Show a ABI/GLM video between start_date and end_date.
     """
     glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
     (abi_fs, abi_files) = abi.get_fs_and_files(
             start_date, end_date, sector="C")
     lfs = fsspec.implementations.local.LocalFileSystem()
-    (ms, mr) = scutil.get_resampled_multiscene(
-            glmc_files + abi_files,
-            reader=["glm_l2", "abi_l1b"],
-            load_first="C14",
-            load_next=["C14_flash_extent_density"],
+    show_video_abi_glm(
+            [x.path for x in glmc_files + abi_files],
+            out_dir,
             scene_kwargs={
                 "reader_kwargs": {
                     "glm_l2": {"file_system": lfs},
