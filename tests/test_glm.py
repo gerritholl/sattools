@@ -155,5 +155,5 @@ def test_run_glmtools(tmp_path, caplog):
              "-o", "/media/nas/x21308/GLM/GLMC/1min/"
              "{start_time:%Y/%m/%d/%H}/{dataset_name}",
              str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")],
-            capture_output=True, shell=False, cwd=None, timeout=120,
+            capture_output=True, shell=False, cwd=None, timeout=900,
             check=True)
