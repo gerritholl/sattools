@@ -191,7 +191,7 @@ def show_video_abi_glm_times(start_date, end_date, out_dir):
     """
     glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
     (abi_fs, abi_files) = abi.get_fs_and_files(
-            start_date, end_date, sector="C")
+            start_date, end_date, sector="M*")
     lfs = fsspec.implementations.local.LocalFileSystem()
     show_video_abi_glm(
             [x.path for x in glmc_files + abi_files],

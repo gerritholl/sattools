@@ -113,12 +113,13 @@ def test_show_video_from_times(
 
     monkeypatch.chdir(tmp_path)
     for i in range(3):
-        tf = (tmp_path / "noaa-goes16" / "ABI-L1b-RadC" / "1900" / "001" / "00"
-              / "OR_ABI-L1b-RadC-M6C14_G16_"
-              f"s19000010{i:>02d}0000_e19000010{i+1:>02d}0000_"
-              "c20403662359590.nc")
-        tf.parent.mkdir(exist_ok=True, parents=True)
-        tf.touch()
+        for s in ("M1", "M2"):
+            tf = (tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{s:s}" / "1900" /
+                  "001" / "00" / f"OR_ABI-L1b-Rad{s:s}-M6C14_G16_"
+                  f"s19000010{i:>02d}0000_e19000010{i+1:>02d}0000_"
+                  "c20403662359590.nc")
+            tf.parent.mkdir(exist_ok=True, parents=True)
+            tf.touch()
 
     smS.return_value.__getitem__.return_value.attrs.\
         __getitem__.return_value = fakearea
@@ -132,10 +133,11 @@ def test_show_video_from_times(
                 "00" / f"OR_GLM-L2-GLMC-M3_G16_s190000100{i:>02d}000_"
                 f"e190000100{i+1:>02d}000_c20403662359590.nc")
             for i in range(20)] + [
-            str(tmp_path / "noaa-goes16" / "ABI-L1b-RadC" / "1900" / "001" /
-                "00" / f"OR_ABI-L1b-RadC-M6C14_G16_s190000100{i:>01d}0000_"
+            str(tmp_path / "noaa-goes16" / f"ABI-L1b-RadM{j:d}" / "1900" /
+                "001" / "00" / f"OR_ABI-L1b-RadM{j:d}-M6C14_G16_"
+                f"s190000100{i:>01d}0000_"
                 f"e190000100{i+1:>01d}0000_c20403662359590.nc")
-            for i in range(2)]
+            for i in range(2) for j in range(1, 3)]
     svs.assert_called_once_with(exp_args, tmp_path/"show-vid",
                                 scene_kwargs=ANY)
 

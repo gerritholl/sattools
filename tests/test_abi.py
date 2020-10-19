@@ -7,7 +7,7 @@ import unittest.mock
 
 
 @unittest.mock.patch("s3fs.S3FileSystem")
-@pytest.mark.parametrize("sector", ["C", "F"])
+@pytest.mark.parametrize("sector", ["C", "F", "M1"])
 def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
     """Test getting FS and files."""
     from sattools.abi import get_fs_and_files
