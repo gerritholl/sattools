@@ -106,19 +106,24 @@ def find_glmc_coverage_gaps(start_date, end_date):
         yield pandas.Interval(last, pandas.Timestamp(end_date))
 
 
-def run_glmtools(files):
+def run_glmtools(files, max_files=180):
     # how to call this?  should not be needed as a subprocess, although maybe
     # advantageous to keep things separate, can I at least determine the
     # location for make_GLM_grids in a more portable manner?
 
-    # FIXME: Surely I can use a Python API for this call...
-    logger.info("Running glmtools for " + ", ".join(str(f) for f in files))
-    subprocess.run(
-            ["python", glm_script, "--fixed_grid", "--split_events",
-             "--goes_position", "east", "--goes_sector", "conus", "--dx=2.0",
-             "--dy=2.0", "--dt", "60", "-o",
-             pattern_dwd_glm_glmc_basedir +
-             "{start_time:%Y/%m/%d/%H}/{dataset_name}",
-             *(str(f) for f in files)],
-            capture_output=True, shell=False, cwd=None, timeout=900,
-            check=True)
+    if len(files) > max_files:
+        logger.info(f"Got {len(files):d} > {max_files:d} files, splitting...")
+    idx = 0
+    while idx < len(files):
+        # FIXME: Surely I can use a Python API for this call...
+        logger.info("Running glmtools for " + ", ".join(str(f) for f in files))
+        subprocess.run(
+                ["python", glm_script, "--fixed_grid", "--split_events",
+                 "--goes_position", "east", "--goes_sector", "conus", "--dx=2.0",
+                 "--dy=2.0", "--dt", "60", "-o",
+                 pattern_dwd_glm_glmc_basedir +
+                 "{start_time:%Y/%m/%d/%H}/{dataset_name}",
+                 *(str(f) for f in files[idx:(idx+max_files)])],
+                capture_output=True, shell=False, cwd=None, timeout=900,
+                check=True)
+        idx += max_files

@@ -157,3 +157,7 @@ def test_run_glmtools(tmp_path, caplog):
              str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")],
             capture_output=True, shell=False, cwd=None, timeout=900,
             check=True)
+        sr.reset_mock()
+        run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
+                     max_files=1)
+        assert sr.call_count == 2
