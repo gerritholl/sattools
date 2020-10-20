@@ -72,7 +72,7 @@ def ensure_glmc_for_period(start_date, end_date):
                 "Found gap between "
                 f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
         files = list(ensure_glm_lcfa_for_period(gap.left, gap.right))
-        run_glmtools(files)
+        run_glmtools(files, max_files=60)
     logger.debug("GLMC should now be fully covered")
     # there should be no more gaps now!
     for gap in find_glmc_coverage_gaps(start_date, end_date):
@@ -106,19 +106,26 @@ def find_glmc_coverage_gaps(start_date, end_date):
         yield pandas.Interval(last, pandas.Timestamp(end_date))
 
 
-def run_glmtools(files):
+def run_glmtools(files, max_files=180):
     # how to call this?  should not be needed as a subprocess, although maybe
     # advantageous to keep things separate, can I at least determine the
     # location for make_GLM_grids in a more portable manner?
 
-    # FIXME: Surely I can use a Python API for this call...
-    logger.info("Running glmtools for " + ", ".join(str(f) for f in files))
-    subprocess.run(
-            ["python", glm_script, "--fixed_grid", "--split_events",
-             "--goes_position", "east", "--goes_sector", "conus", "--dx=2.0",
-             "--dy=2.0", "--dt", "60", "-o",
-             pattern_dwd_glm_glmc_basedir +
-             "{start_time:%Y/%m/%d/%H}/{dataset_name}",
-             *(str(f) for f in files)],
-            capture_output=True, shell=False, cwd=None, timeout=900,
-            check=True)
+    if len(files) > max_files:
+        logger.info(f"Got {len(files):d} > {max_files:d} files, splitting...")
+    idx = 0
+    while idx < len(files):
+        # FIXME: Surely I can use a Python API for this call...
+        these_files = files[idx:(idx+max_files)]
+        logger.info("Running glmtools for " + ", ".join(
+                    str(f) for f in these_files))
+        subprocess.run(
+                ["python", glm_script, "--fixed_grid", "--split_events",
+                 "--goes_position", "east", "--goes_sector", "conus",
+                 "--dx=2.0", "--dy=2.0", "--dt", "60", "-o",
+                 pattern_dwd_glm_glmc_basedir +
+                 "{start_time:%Y/%m/%d/%H}/{dataset_name}",
+                 *(str(f) for f in these_files)],
+                capture_output=True, shell=False, cwd=None, timeout=900,
+                check=True)
+        idx += max_files
