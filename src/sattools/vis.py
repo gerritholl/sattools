@@ -5,11 +5,8 @@ import numpy
 import satpy
 import pyresample.geometry
 import logging
-import fsspec.implementations.local
 
 from . import scutil
-from . import abi
-from . import glm
 
 logger = logging.getLogger(__name__)
 
@@ -189,14 +186,9 @@ def show_video_abi_glm(
 def show_video_abi_glm_times(start_date, end_date, out_dir):
     """Show a ABI/GLM video between start_date and end_date.
     """
-    glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
-    (abi_fs, abi_files) = abi.get_fs_and_files(
-            start_date, end_date, sector="M*")
-    lfs = fsspec.implementations.local.LocalFileSystem()
+    (lfs, glmc_files, abi_fs, abi_files,
+     scene_kwargs) = scutil.prepare_abi_glm_ms_args(start_date, end_date)
     show_video_abi_glm(
             [x.path for x in glmc_files + abi_files],
             out_dir,
-            scene_kwargs={
-                "reader_kwargs": {
-                    "glm_l2": {"file_system": lfs},
-                    "abi_l1b": {"file_system": abi_fs}}})
+            scene_kwargs=scene_kwargs)

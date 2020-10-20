@@ -1,11 +1,13 @@
 """Utilities to get and manipulate scenes and multiscenes."""
 
-
-import satpy
-
 import logging
 
+import satpy
+import fsspec
+
 from . import area
+from . import glm
+from . import abi
 
 logger = logging.getLogger(__name__)
 
@@ -45,3 +47,19 @@ def _get_all_areas_from_multiscene(ms, datasets=None):
             except KeyError:
                 pass  # not an area-aware dataset
     return S
+
+
+def prepare_abi_glm_ms_args(start_date, end_date):
+    """Prepare args for ABI/GLM joint multiscene.
+
+    Returns (glm_fs, glm_files, abi_fs, abi_files, scene_kwargs)
+    """
+    glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
+    (abi_fs, abi_files) = abi.get_fs_and_files(
+            start_date, end_date, sector="M*")
+    lfs = fsspec.implementations.local.LocalFileSystem()
+    scene_kwargs = {
+        "reader_kwargs": {
+            "glm_l2": {"file_system": lfs},
+            "abi_l1b": {"file_system": abi_fs}}}
+    return (lfs, glmc_files, abi_fs, abi_files, scene_kwargs)
