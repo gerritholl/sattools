@@ -49,14 +49,14 @@ def _get_all_areas_from_multiscene(ms, datasets=None):
     return S
 
 
-def prepare_abi_glm_ms_args(start_date, end_date):
+def prepare_abi_glm_ms_args(start_date, end_date, chans):
     """Prepare args for ABI/GLM joint multiscene.
 
     Returns (glm_fs, glm_files, abi_fs, abi_files, scene_kwargs)
     """
     glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
     (abi_fs, abi_files) = abi.get_fs_and_files(
-            start_date, end_date, sector="M*")
+            start_date, end_date, sector="M*", chans=chans)
     lfs = fsspec.implementations.local.LocalFileSystem()
     scene_kwargs = {
         "reader_kwargs": {
