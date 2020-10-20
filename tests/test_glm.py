@@ -75,10 +75,11 @@ def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern,
                     datetime.datetime(1900, 1, 1, 0, 6, 0)))
         sgr.assert_has_calls(
                 [call([tmp_path / "whole-file-cache" /
-                       f"lcfa-fake-1900010100{m:>02d}00-00{m+1:>02d}00.nc"])
+                       f"lcfa-fake-1900010100{m:>02d}00-00{m+1:>02d}00.nc"],
+                      max_files=60)
                  for m in (2, 4)])
 
-        def fake_run(files):
+        def fake_run(files, max_files):
             """Create files when testing."""
             _mk_test_files(glmc_pattern, (0, 1, 2, 3, 4, 5, 6))
         sgr.side_effect = fake_run
@@ -157,3 +158,7 @@ def test_run_glmtools(tmp_path, caplog):
              str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")],
             capture_output=True, shell=False, cwd=None, timeout=900,
             check=True)
+        sr.reset_mock()
+        run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
+                     max_files=1)
+        assert sr.call_count == 2
