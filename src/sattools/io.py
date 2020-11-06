@@ -39,9 +39,11 @@ def plotdir(basedir=None, create=False):
     return pd
 
 
-def datadir(basedir=None, subdir="data", create=False):
+def nas_data_out(nas_store=None, subdir="data_out", create=False):
+    """Get base directory for data to store on NAS.
+    """
     pd = pathlib.Path(
-        basedir or
+        nas_store or
         os.environ.get("NAS_DATA") or
         "/media/nas/x21308") / subdir
     if create:
