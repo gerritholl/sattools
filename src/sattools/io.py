@@ -37,3 +37,13 @@ def plotdir(basedir=None, create=False):
     if create:
         pd.mkdir(parents=True, exist_ok=True)
     return pd
+
+
+def datadir(basedir=None, subdir="data", create=False):
+    pd = pathlib.Path(
+        basedir or
+        os.environ.get("NAS_DATA") or
+        "/media/nas/x21308") / subdir
+    if create:
+        pd.mkdir(parents=True, exist_ok=True)
+    return pd
