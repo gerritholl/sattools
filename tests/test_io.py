@@ -52,3 +52,19 @@ def test_plotdir(tmp_path, monkeypatch):
     assert not pd.exists()
     pd = plotdir(create=True)
     assert pd.exists()
+
+
+def test_datadir(tmp_path, monkeypatch):
+    from sattools.io import nas_data_out
+    monkeypatch.delenv("NAS_DATA", raising=False)
+    pd = nas_data_out(create=False)
+    assert pd == pathlib.Path("/media/nas/x21308/data_out")
+    monkeypatch.setenv("NAS_DATA", tmp_path)
+    pd = nas_data_out(create=False)
+    assert pd == tmp_path / "data_out"
+    assert not pd.exists()
+    pd = nas_data_out(create=True)
+    assert pd.exists()
+    pd = nas_data_out(tmp_path / "fionnay", subdir="datum", create=True)
+    assert pd == tmp_path / "fionnay" / "datum"
+    assert pd.exists()
