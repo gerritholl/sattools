@@ -78,22 +78,29 @@ def fake_multiscene2():
     common_attrs = {
             "start_time": datetime.datetime(1900, 1, 1, 0, 0),
             "end_time": datetime.datetime(1900, 1, 1, 0, 1)}
+    content = {x: numpy.arange(5*5).reshape(5, 5)
+               for x in ("C08", "C10", "C14", "C14_flash_extent_density")}
     sc1 = satpy.tests.utils.make_fake_scene(
-            {"C14": numpy.arange(5*5).reshape(5, 5),
-             "C14_flash_extent_density": numpy.arange(5*5).reshape(5, 5)},
+            content.copy(),
             common_attrs=common_attrs)
     sc2 = satpy.tests.utils.make_fake_scene(
-            {"C14": numpy.arange(5*5).reshape(5, 5),
-             "C14_flash_extent_density": numpy.arange(5*5).reshape(5, 5)},
+            content.copy(),
             common_attrs=common_attrs)
     sc3 = satpy.tests.utils.make_fake_scene(
-            {"C14": numpy.arange(5*10).reshape(10, 5),
-             "C14_flash_extent_density": numpy.arange(5*10).reshape(10, 5)},
+            {k: numpy.concatenate([v, v], 0) for (k, v) in content.items()},
             area=pyresample.geometry.StackedAreaDefinition(
                 sc1["C14"].attrs["area"],
                 sc2["C14"].attrs["area"]),
             common_attrs=common_attrs)
     return satpy.MultiScene([sc1, sc2, sc3])
+
+
+@pytest.fixture
+def fake_multiscene_empty():
+    """Fake multiscene with empty scenes.
+    """
+
+    return satpy.MultiScene([satpy.Scene() for _ in range(3)])
 
 
 @pytest.fixture
