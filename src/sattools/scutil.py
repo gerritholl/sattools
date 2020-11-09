@@ -1,6 +1,7 @@
 """Utilities to get and manipulate scenes and multiscenes."""
 
 import logging
+import numbers
 
 import satpy
 import fsspec
@@ -58,7 +59,7 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
 
 def _get_all_areas_from_multiscene(ms, datasets=None):
     S = set()
-    if isinstance(datasets, (str, satpy.DataID)):
+    if isinstance(datasets, (str, satpy.DataID, numbers.Real)):
         datasets = [datasets]
     for sc in ms.scenes:
         for ds in datasets or sc.keys():
