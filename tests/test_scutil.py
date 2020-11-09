@@ -38,4 +38,10 @@ def test_get_resampled_multiscene(sMf, tmp_path, fake_multiscene_empty, fake_mul
             "C08",
             ["C10"])
     assert "C10" in ms[0].first_scene
+    ms = get_resampled_multiscene(
+            [str(tmp_path / f"in{i:d}") for i in (1, 2, 3)],
+            ["glm", "abi"],
+            6.2,
+            [7.3])
+    assert "C10" in ms[0].first_scene
 
