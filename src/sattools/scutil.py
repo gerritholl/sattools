@@ -1,6 +1,7 @@
 """Utilities to get and manipulate scenes and multiscenes."""
 
 import logging
+import numbers
 
 import satpy
 import fsspec
@@ -15,12 +16,32 @@ logger = logging.getLogger(__name__)
 def get_resampled_multiscene(files, reader, load_first, load_next,
                              scene_kwargs={}):
     """Get a multiscene resampled to the area covering all scenes in it.
+
+    Given a list of files where area may vary between files, get a multiscene
+    where each scene is resamled to the smallest enclosing area.  This is
+    particularly useful when the multiscene consists of a range of ABI M1 and
+    M2 scenes which may shift during the multiscene.
+
+    Args:
+        files (list of str or path): Files containing data.  Passed to
+            ``satpy.MultiScene.from_files``.
+        reader (List[str]): Readers to use.  Passed to
+            ``satpy.MultiScene.from_files``.
+        load_first (DataQuery, str, or numeric): Channel or wavelength, what
+            dataset is loaded initially in order to calculate the joint area.
+        load_next (list of DataQuery, str, or numeric): Channels or
+            wavelengths, what datasets are loaded subsequently.
+        scene_kwargs (Mapping): keyword arguments to pass to reader.  Passed to
+            ``satpy.MultiScene.from_files``.
+
+    Returns:
+        (multiscene, resampled multiscene)
     """
 
     logger.info("Constructing multiscene")
     ms = satpy.MultiScene.from_files(
             [str(x) for x in files],
-            reader=["glm_l2", "abi_l1b"],
+            reader=reader,
             ensure_all_readers=True,
             scene_kwargs=scene_kwargs,
             group_keys=["start_time"],
@@ -38,7 +59,7 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
 
 def _get_all_areas_from_multiscene(ms, datasets=None):
     S = set()
-    if isinstance(datasets, (str, satpy.DataID)):
+    if isinstance(datasets, (str, satpy.DataID, numbers.Real)):
         datasets = [datasets]
     for sc in ms.scenes:
         for ds in datasets or sc.keys():
