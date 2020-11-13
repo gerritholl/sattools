@@ -1,11 +1,14 @@
+import datetime
 import logging
+import unittest.mock
 
 
-def test_setup_handler():
+def test_setup_handler(tmp_path):
     import sattools.log
-    sattools.log.setup_main_handler(["banana"])
+    sattools.log.setup_main_handler(
+            ["banana"], filename=tmp_path / "test.log")
     logger = logging.getLogger("banana")
-    assert len(logger.handlers) == 1
+    assert len(logger.handlers) == 2
 
 
 def test_log_context(tmp_path):
@@ -29,3 +32,14 @@ def test_log_context(tmp_path):
         text = fp.read()
         assert "tofu" in text
         assert "veggie" not in text
+
+
+def test_logdir(tmp_path, monkeypatch):
+    import sattools.log
+    monkeypatch.setenv("NAS_DATA", str(tmp_path))
+    notnow = datetime.datetime(1900, 1, 1, 2, 3, 4)
+    with unittest.mock.patch("datetime.datetime", autospec=True) as dd:
+        dd.now.return_value = notnow
+        d = sattools.log.logdir("saas", "grund")
+    assert d == (tmp_path / "log" / "saas" /
+                 "1900-01-01" / "grund-19000101T020304.log")
