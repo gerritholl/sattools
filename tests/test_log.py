@@ -40,6 +40,7 @@ def test_logdir(tmp_path, monkeypatch):
     notnow = datetime.datetime(1900, 1, 1, 2, 3, 4)
     with unittest.mock.patch("datetime.datetime", autospec=True) as dd:
         dd.now.return_value = notnow
-        d = sattools.log.logdir("saas", "grund")
+        d = sattools.log.logfile("saas", "grund")
     assert d == (tmp_path / "log" / "saas" /
                  "1900-01-01" / "grund-19000101T020304.log")
+    assert d.parent.exists()

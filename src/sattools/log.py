@@ -104,7 +104,7 @@ class LogToTimeFile(LoggingContext):
         super().__exit__(et, ev, tb)
 
 
-def logdir(name, label):
+def logfile(name, label, create_dir=True):
     """Return filename to log to.
 
     I don't agree with appdirs.user_log_dir() which puts it in cache.
@@ -119,4 +119,6 @@ def logdir(name, label):
             )
     logfile = (basedir / "log" / name / f"{now:%Y-%m-%d}" /
                f"{label:s}-{now:%Y%m%dT%H%M%S}.log")
+    if create_dir:
+        logfile.parent.mkdir(exist_ok=True, parents=True)
     return logfile
