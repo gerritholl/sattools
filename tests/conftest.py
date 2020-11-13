@@ -83,7 +83,8 @@ def fake_multiscene2():
     wl = {"C08": WavelengthRange(5.7, 6.2, 6.7),
           "C10": WavelengthRange(6.8, 7.3, 7.8),
           "C14": WavelengthRange(10, 11, 12)}
-    content = {make_dataid(name=x, wavelength=wl.get(x)): numpy.arange(5*5).reshape(5, 5)
+    content = {make_dataid(name=x, wavelength=wl.get(x)):
+               numpy.arange(5*5).reshape(5, 5)
                for x in ("C08", "C10", "C14", "C14_flash_extent_density")}
     sc1 = satpy.tests.utils.make_fake_scene(
             content.copy(),

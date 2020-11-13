@@ -1,5 +1,6 @@
 import unittest.mock
 
+
 def test_get_all_areas(fake_multiscene):
     from sattools.scutil import _get_all_areas_from_multiscene
     areas = _get_all_areas_from_multiscene(fake_multiscene)
@@ -7,12 +8,14 @@ def test_get_all_areas(fake_multiscene):
 
 
 @unittest.mock.patch("satpy.MultiScene.from_files", autospec=True)
-def test_get_resampled_multiscene(sMf, tmp_path, fake_multiscene_empty, fake_multiscene2):
+def test_get_resampled_multiscene(
+        sMf, tmp_path, fake_multiscene_empty, fake_multiscene2):
     from sattools.scutil import get_resampled_multiscene
     sMf.return_value = fake_multiscene_empty
 
     def load(ds_all, unload=None):
-        for (sc, ref_sc) in zip(fake_multiscene_empty.scenes, fake_multiscene2.scenes):
+        for (sc, ref_sc) in zip(
+                fake_multiscene_empty.scenes, fake_multiscene2.scenes):
             for ds in ds_all:
                 sc[ds] = ref_sc[ds]
 
@@ -44,4 +47,3 @@ def test_get_resampled_multiscene(sMf, tmp_path, fake_multiscene_empty, fake_mul
             6.2,
             [7.3])
     assert "C10" in ms[0].first_scene
-
