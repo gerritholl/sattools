@@ -2,7 +2,7 @@ import pathlib
 import datetime
 import logging
 
-from unittest.mock import patch, call
+from unittest.mock import patch, call, MagicMock
 
 import pandas
 import pytest
@@ -143,22 +143,15 @@ def test_find_gaps(glmc_pattern, glmc_files):
 
 def test_run_glmtools(tmp_path, caplog):
     from sattools.glm import run_glmtools
-    with patch("subprocess.run") as sr:
+    with patch("sattools.glm.load_file") as sgl:
+        mocks = [MagicMock() for _ in range(5)]
+        sgl.return_value.grid_setup.return_value = mocks
         with caplog.at_level(logging.INFO):
             run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"])
             assert (f"Running glmtools for {(tmp_path / 'lcfa1.nc')!s}, "
                     f"{(tmp_path / 'lcfa2.nc')!s}" in caplog.text)
-        sr.assert_called_once_with(
-            ["python",
-             "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py",
-             "--fixed_grid", "--split_events", "--goes_position", "east",
-             "--goes_sector", "conus", "--dx=2.0", "--dy=2.0", "--dt", "60",
-             "-o", "/media/nas/x21308/GLM/GLMC/1min/"
-             "{start_time:%Y/%m/%d/%H}/{dataset_name}",
-             str(tmp_path / "lcfa1.nc"), str(tmp_path / "lcfa2.nc")],
-            capture_output=True, shell=False, cwd=None, timeout=900,
-            check=True)
-        sr.reset_mock()
+        mocks[0].assert_called_once()
+        mocks[0].reset_mock()
         run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
                      max_files=1)
-        assert sr.call_count == 2
+        assert mocks[0].call_count == 2
