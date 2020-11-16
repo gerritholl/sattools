@@ -1,30 +1,45 @@
 """Utilities related to logging."""
 
+import os
 import sys
 import logging
+import datetime
+import pathlib
+import appdirs
 
 logger = logging.getLogger(__name__)
 
 
 def setup_main_handler(
         mods=("fogtools", "typhon", "fogpy", "sattools", "fcitools"),
-        level=logging.DEBUG):
-    """Setup the main stderr StreamHandler.
+        level=logging.DEBUG,
+        stderr=True,
+        filename=None):
+    """Setup the main handlers.
+
+    By default, setups a stderr StreamHandler.  Optionally also sets up a
+    FileHandler.
 
     Args:
         mods (Collection[str]): Modules to log for.
         level (logging level): At what level to log to stderr.
     """
-    handler = logging.StreamHandler(sys.stderr)
+    handlers = []
+    if stderr:
+        handlers.append(logging.StreamHandler(sys.stderr))
+    if filename:
+        handlers.append(logging.FileHandler(filename, encoding="utf-8"))
     formatter = logging.Formatter(
         "{levelname:<8s} {name:s} {asctime:s} "
         "{module:s}.{funcName:s}:{lineno:d}: {message:s}",
         style="{")
-    handler.setFormatter(formatter)
+    for handler in handlers:
+        handler.setFormatter(formatter)
     for m in mods:
         log = logging.getLogger(m)
         log.setLevel(level)
-        log.addHandler(handler)
+        for handler in handlers:
+            log.addHandler(handler)
 
 
 # this class is based on
@@ -58,6 +73,11 @@ class LogToTimeFile(LoggingContext):
 
     This is intended to be used when files are processed, and a corresponding
     logfile shall be written.
+
+    Example:
+
+    with log.LogToTimeFile(logfile):
+        ...
     """
 
     def __init__(self, logfile):
@@ -82,3 +102,23 @@ class LogToTimeFile(LoggingContext):
     def __exit__(self, et, ev, tb):
         logger.info(f"Closing logfile at {self.logfile!s}")
         super().__exit__(et, ev, tb)
+
+
+def logfile(name, label, create_dir=True):
+    """Return filename to log to.
+
+    I don't agree with appdirs.user_log_dir() which puts it in cache.
+    Logging is permanent, caching is not.  Instead uses the NAS_DATA
+    environment variable as a base.
+    """
+    now = datetime.datetime.now()
+    basedir = pathlib.Path(
+            os.environ.get(
+                "NAS_DATA",
+                appdirs.user_log_dir(opinion=False))
+            )
+    logfile = (basedir / "log" / name / f"{now:%Y-%m-%d}" /
+               f"{label:s}-{now:%Y%m%dT%H%M%S}.log")
+    if create_dir:
+        logfile.parent.mkdir(exist_ok=True, parents=True)
+    return logfile
