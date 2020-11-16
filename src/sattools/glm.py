@@ -6,6 +6,7 @@ import pandas
 import s3fs
 import fsspec.implementations.cached
 import logging
+import os
 
 from typhon.files.fileset import FileSet
 
@@ -13,16 +14,23 @@ pattern_s3_glm_lcfa = (
         "noaa-goes16/GLM-L2-LCFA/{year}/{doy}/{hour}/"
         "OR_GLM-L2-LCFA_G16_s{year}{doy}{hour}{minute}{second}*_"
         "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc")
-pattern_dwd_glm_glmc_basedir = "/media/nas/x21308/GLM/GLMC/1min/"
-pattern_dwd_glm_glmc = (
-        pattern_dwd_glm_glmc_basedir +
-        "{year}/{month}/{day}/{hour}/"
-        "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
-        "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
-        "c*.nc")
+
 glm_script = "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py"
 
 logger = logging.getLogger(__name__)
+
+
+def get_dwd_glm_glmc_basedir():
+    base = os.environ["NAS_DATA"]
+    return pathlib.Path(base) / "GLM" / "GLMC" / "1min"
+
+
+def get_pattern_dwd_glm_glmc():
+    return str(get_dwd_glm_glmc_basedir() /
+               "{year}/{month}/{day}/{hour}/"
+               "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
+               "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
+               "c*.nc")
 
 
 def ensure_glm_lcfa_for_period(start_date, end_date):
@@ -80,14 +88,14 @@ def ensure_glmc_for_period(start_date, end_date):
                 "I have tried to ensure GLMC by running glmtools, but "
                 "data still appear to be missing for "
                 f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
-    glmc = FileSet(path=pattern_dwd_glm_glmc, name="glmc")
+    glmc = FileSet(path=get_pattern_dwd_glm_glmc(), name="glmc")
     yield from glmc.find(start_date, end_date, no_files_error=True)
 
 
 def find_glmc_coverage(start_date, end_date):
     """Yield intervals corresponding to GLMC coverage.
     """
-    glmc = FileSet(path=pattern_dwd_glm_glmc, name="glmc")
+    glmc = FileSet(path=get_pattern_dwd_glm_glmc(), name="glmc")
     for file_info in glmc.find(start_date, end_date, no_files_error=False):
         yield pandas.Interval(
                 pandas.Timestamp(file_info.times[0]),
@@ -135,8 +143,8 @@ def run_glmtools(files, max_files=180):
                 ["--fixed_grid", "--split_events",
                  "--goes_position", "east", "--goes_sector", "conus",
                  "--dx=2.0", "--dy=2.0", "--dt", "60", "-o",
-                 pattern_dwd_glm_glmc_basedir +
-                 "{start_time:%Y/%m/%d/%H}/{dataset_name}",
+                 str(get_dwd_glm_glmc_basedir()) +
+                 "/{start_time:%Y/%m/%d/%H}/{dataset_name}",
                  *(str(f) for f in these_files)])
         # this part taken from glmtools example script glm_script
         (gridder, glm_filenames, start_time, end_time, grid_kwargs) = \

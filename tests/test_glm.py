@@ -9,12 +9,32 @@ import pytest
 from conftest import _mk_test_files
 
 
+def test_get_basedir(tmp_path, monkeypatch):
+    from sattools.glm import get_dwd_glm_glmc_basedir
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
+    d = get_dwd_glm_glmc_basedir()
+    assert d == pathlib.Path(tmp_path / "nas" / "GLM" / "GLMC" / "1min")
+
+
+def test_get_pattern(tmp_path, monkeypatch):
+    from sattools.glm import get_pattern_dwd_glm_glmc
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
+    p = get_pattern_dwd_glm_glmc()
+    assert p == str(pathlib.Path(
+        tmp_path / "nas" / "GLM" / "GLMC" / "1min" / "{year}/{month}/"
+        "{day}/{hour}/"
+        "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
+        "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc"))
+
+
 @patch("appdirs.user_cache_dir")
 @patch("s3fs.S3FileSystem")
-def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog):
+def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog,
+                         monkeypatch):
     from sattools.glm import ensure_glm_lcfa_for_period
     from fsspec.implementations.local import LocalFileSystem
     from typhon.files.fileset import NoFilesError
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     au.return_value = str(tmp_path / "whole-file-cache")
     sS.return_value = LocalFileSystem()
     with patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
@@ -60,15 +80,16 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog):
 @patch("sattools.glm.run_glmtools")
 @patch("appdirs.user_cache_dir")
 @patch("s3fs.S3FileSystem")
-def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern,
-                     lcfa_files, tmp_path):
+def test_ensure_glmc(sS, au, sgr, glmc_files, lcfa_pattern,
+                     lcfa_files, tmp_path, monkeypatch):
     from sattools.glm import ensure_glmc_for_period
+    from sattools.glm import get_pattern_dwd_glm_glmc
     from fsspec.implementations.local import LocalFileSystem
     from typhon.files.fileset import FileInfo
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     au.return_value = str(tmp_path / "whole-file-cache")
     sS.return_value = LocalFileSystem()
-    with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern), \
-         patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
+    with patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
         with pytest.raises(RuntimeError):  # files not created when testing
             next(ensure_glmc_for_period(
                     datetime.datetime(1900, 1, 1, 0, 0, 0),
@@ -81,25 +102,27 @@ def test_ensure_glmc(sS, au, sgr, glmc_pattern, glmc_files, lcfa_pattern,
 
         def fake_run(files, max_files):
             """Create files when testing."""
-            _mk_test_files(glmc_pattern, (0, 1, 2, 3, 4, 5, 6))
+            _mk_test_files(get_pattern_dwd_glm_glmc(), (0, 1, 2, 3, 4, 5, 6))
         sgr.side_effect = fake_run
         g = ensure_glmc_for_period(
                 datetime.datetime(1900, 1, 1, 0, 0, 0),
                 datetime.datetime(1900, 1, 1, 0, 6, 0))
         fi = next(g)
         assert isinstance(fi, FileInfo)
-        assert fi.path == str(tmp_path / "glmc-fake" /
-               "glmc-fake-19000101000000-000100.nc")
+        assert fi.path == str(
+                tmp_path / "nas" / "GLM" / "GLMC" /
+                "1min" / "1900" / "01" / "01" / "00" /
+                "OR_GLM-L2-GLMC-M3_G16_s1900001000000*_e1900001000100*_c*.nc")
         assert fi.times == [datetime.datetime(1900, 1, 1, 0, 0),
                             datetime.datetime(1900, 1, 1, 0, 1)]
 
 
-def test_find_coverage(glmc_pattern, glmc_files):
+def test_find_coverage(glmc_files, tmp_path, monkeypatch):
     from sattools.glm import find_glmc_coverage
-    with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern):
-        covered = list(find_glmc_coverage(
-            datetime.datetime(1900, 1, 1, 0, 0, 0),
-            datetime.datetime(1900, 1, 1, 0, 6, 0)))
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
+    covered = list(find_glmc_coverage(
+        datetime.datetime(1900, 1, 1, 0, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 6, 0)))
     assert covered == [
             pandas.Interval(pandas.Timestamp("1900-01-01T00:00:00"),
                             pandas.Timestamp("1900-01-01T00:01:00")),
@@ -109,40 +132,40 @@ def test_find_coverage(glmc_pattern, glmc_files):
                             pandas.Timestamp("1900-01-01T00:04:00")),
             pandas.Interval(pandas.Timestamp("1900-01-01T00:05:00"),
                             pandas.Timestamp("1900-01-01T00:06:00"))]
-    with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern):
-        covered = list(find_glmc_coverage(
-            datetime.datetime(1900, 1, 2, 3, 4, 5),
-            datetime.datetime(1900, 5, 4, 3, 2, 1)))
-        assert covered == []
+    covered = list(find_glmc_coverage(
+        datetime.datetime(1900, 1, 2, 3, 4, 5),
+        datetime.datetime(1900, 5, 4, 3, 2, 1)))
+    assert covered == []
 
 
-def test_find_gaps(glmc_pattern, glmc_files):
+def test_find_gaps(glmc_files, monkeypatch, tmp_path):
     from sattools.glm import find_glmc_coverage_gaps
-    with patch("sattools.glm.pattern_dwd_glm_glmc", glmc_pattern):
-        gaps = list(find_glmc_coverage_gaps(
-            datetime.datetime(1900, 1, 1, 0, 0),
-            datetime.datetime(1900, 1, 1, 0, 8)))
-        assert gaps == [
-                pandas.Interval(pandas.Timestamp("1900-01-01T00:02:00"),
-                                pandas.Timestamp("1900-01-01T00:03:00")),
-                pandas.Interval(pandas.Timestamp("1900-01-01T00:04:00"),
-                                pandas.Timestamp("1900-01-01T00:05:00")),
-                pandas.Interval(pandas.Timestamp("1900-01-01T00:06:00"),
-                                pandas.Timestamp("1900-01-01T00:08:00"))]
-        gaps = list(find_glmc_coverage_gaps(
-            datetime.datetime(1900, 1, 2, 0, 0),
-            datetime.datetime(1900, 1, 2, 0, 8)))
-        assert gaps == [
-                pandas.Interval(pandas.Timestamp("1900-01-02T00:00:00"),
-                                pandas.Timestamp("1900-01-02T00:08:00"))]
-        gaps = list(find_glmc_coverage_gaps(
-            datetime.datetime(1900, 1, 1, 0, 0),
-            datetime.datetime(1900, 1, 1, 0, 2)))
-        assert list(gaps) == []
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
+    gaps = list(find_glmc_coverage_gaps(
+        datetime.datetime(1900, 1, 1, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 8)))
+    assert gaps == [
+            pandas.Interval(pandas.Timestamp("1900-01-01T00:02:00"),
+                            pandas.Timestamp("1900-01-01T00:03:00")),
+            pandas.Interval(pandas.Timestamp("1900-01-01T00:04:00"),
+                            pandas.Timestamp("1900-01-01T00:05:00")),
+            pandas.Interval(pandas.Timestamp("1900-01-01T00:06:00"),
+                            pandas.Timestamp("1900-01-01T00:08:00"))]
+    gaps = list(find_glmc_coverage_gaps(
+        datetime.datetime(1900, 1, 2, 0, 0),
+        datetime.datetime(1900, 1, 2, 0, 8)))
+    assert gaps == [
+            pandas.Interval(pandas.Timestamp("1900-01-02T00:00:00"),
+                            pandas.Timestamp("1900-01-02T00:08:00"))]
+    gaps = list(find_glmc_coverage_gaps(
+        datetime.datetime(1900, 1, 1, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 2)))
+    assert list(gaps) == []
 
 
-def test_run_glmtools(tmp_path, caplog):
+def test_run_glmtools(tmp_path, caplog, monkeypatch):
     from sattools.glm import run_glmtools
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     with patch("sattools.glm.load_file") as sgl:
         mocks = [MagicMock() for _ in range(5)]
         sgl.return_value.grid_setup.return_value = mocks
