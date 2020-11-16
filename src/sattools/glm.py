@@ -27,10 +27,10 @@ def get_dwd_glm_glmc_basedir():
 
 def get_pattern_dwd_glm_glmc():
     return str(get_dwd_glm_glmc_basedir() /
-        "{year}/{month}/{day}/{hour}/"
-        "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
-        "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
-        "c*.nc")
+               "{year}/{month}/{day}/{hour}/"
+               "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
+               "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
+               "c*.nc")
 
 
 def ensure_glm_lcfa_for_period(start_date, end_date):

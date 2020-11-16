@@ -129,8 +129,8 @@ def test_show_video_from_times(
             datetime.datetime(1900, 1, 1, 0, 20),
             out_dir=tmp_path / "show-vid")
     exp_args = [
-            str(tmp_path / "noaa-goes16" / "GLM-L2-GLMC" / "1900" / "001" /
-                "00" / f"OR_GLM-L2-GLMC-M3_G16_s190000100{i:>02d}000_"
+            str(tmp_path / "nas" / "GLM" / "GLMC" / "1min" / "1900" / "01" /
+                "01" / "00" / f"OR_GLM-L2-GLMC-M3_G16_s190000100{i:>02d}000_"
                 f"e190000100{i+1:>02d}000_c20403662359590.nc")
             for i in range(20)] + [
             str(tmp_path / "noaa-goes16" / f"ABI-L1b-RadM{j:d}" / "1900" /
