@@ -144,7 +144,7 @@ def run_glmtools(files, max_files=180):
                  "--goes_position", "east", "--goes_sector", "conus",
                  "--dx=2.0", "--dy=2.0", "--dt", "60", "-o",
                  str(get_dwd_glm_glmc_basedir()) +
-                 "{start_time:%Y/%m/%d/%H}/{dataset_name}",
+                 "/{start_time:%Y/%m/%d/%H}/{dataset_name}",
                  *(str(f) for f in these_files)])
         # this part taken from glmtools example script glm_script
         (gridder, glm_filenames, start_time, end_time, grid_kwargs) = \
