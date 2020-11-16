@@ -40,10 +40,11 @@ def test_get_areas(caplog):
 def test_add_pkg():
     import sattools.ptc
     scn = MagicMock()
-    with patch("satpy.composites.CompositorLoader", autospec=True) as scC, \
+    with patch("satpy.composites.config_loader.CompositorLoader",
+               autospec=True) as sccC, \
             patch("pkg_resources.resource_filename", autospec=True) as prf:
         prf.return_value = "/dev/null"
-        scC.return_value.load_compositors.return_value = ({}, {})
+        sccC.return_value.load_compositors.return_value = ({}, {})
         sattools.ptc.add_pkg_comps_mods(scn, "apple", ["tomato"])
 
 
