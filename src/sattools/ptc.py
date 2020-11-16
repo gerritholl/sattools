@@ -3,7 +3,7 @@
 
 import logging
 
-import satpy.composites
+import satpy.composites.config_loader
 import satpy.config
 import pkg_resources
 import pyresample
@@ -44,7 +44,7 @@ def add_pkg_comps_mods(scn, pkg, sensors=["abi"]):
     composites and modifiers
     """
     p = pkg_resources.resource_filename(pkg, "etc/")
-    cpl = satpy.composites.CompositorLoader(p)
+    cpl = satpy.composites.config_loader.CompositorLoader(p)
     (comps, mods) = cpl.load_compositors(sensors)
     satpy.config.recursive_dict_update(scn.dep_tree.compositors, comps)
     satpy.config.recursive_dict_update(scn.dep_tree.modifiers, mods)
