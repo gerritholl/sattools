@@ -30,7 +30,7 @@ def setup_main_handler(
     if filename:
         handlers.append(logging.FileHandler(filename, encoding="utf-8"))
     formatter = logging.Formatter(
-        "{levelname:<8s} {name:s} {asctime:s} "
+        "{asctime:s} {levelname:<8s} {name:s} "
         "{module:s}.{funcName:s}:{lineno:d}: {message:s}",
         style="{")
     for handler in handlers:
