@@ -120,13 +120,13 @@ def fake_multiscene3(fake_multiscene2):
     return fms
 
 
-@pytest.fixture
-def glmc_pattern(tmp_path):
-    # typhon fileset doesn't understand the full format-specification
-    # mini-language, so something like hour:>02d doesn't work...
-    return str(tmp_path / "glmc-fake" /
-               "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
-               "{end_hour}{end_minute}{end_second}.nc")
+# @pytest.fixture
+# def glmc_pattern(tmp_path):
+#     # typhon fileset doesn't understand the full format-specification
+#     # mini-language, so something like hour:>02d doesn't work...
+#     return str(tmp_path / "nas" / "glmc-fake" /
+#                "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
+#                "{end_hour}{end_minute}{end_second}.nc")
 
 
 @pytest.fixture
@@ -165,8 +165,12 @@ def _mk_test_files(pattern, minutes):
 
 
 @pytest.fixture
-def glmc_files(glmc_pattern):
-    return _mk_test_files(glmc_pattern, (0, 1, 3, 5))
+def glmc_files(monkeypatch, tmp_path):
+    from sattools.glm import get_pattern_dwd_glm_glmc
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
+    return _mk_test_files(
+            get_pattern_dwd_glm_glmc(),
+            (0, 1, 3, 5))
 
 
 @pytest.fixture

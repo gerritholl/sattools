@@ -123,11 +123,11 @@ def test_show_video_from_times(
 
     smS.return_value.__getitem__.return_value.attrs.\
         __getitem__.return_value = fakearea
-    with patch("sattools.glm.pattern_dwd_glm_glmc", better_glmc_pattern):
-        show_video_abi_glm_times(
-                datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 0, 20),
-                out_dir=tmp_path / "show-vid")
+    monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
+    show_video_abi_glm_times(
+            datetime.datetime(1900, 1, 1, 0, 0),
+            datetime.datetime(1900, 1, 1, 0, 20),
+            out_dir=tmp_path / "show-vid")
     exp_args = [
             str(tmp_path / "noaa-goes16" / "GLM-L2-GLMC" / "1900" / "001" /
                 "00" / f"OR_GLM-L2-GLMC-M3_G16_s190000100{i:>02d}000_"
