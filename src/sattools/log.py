@@ -10,6 +10,10 @@ import appdirs
 logger = logging.getLogger(__name__)
 
 
+class WarningLoggedError(Exception):
+    pass
+
+
 def setup_main_handler(
         mods=("fogtools", "typhon", "fogpy", "sattools", "fcitools"),
         level=logging.DEBUG,
@@ -122,3 +126,25 @@ def logfile(name, label, create_dir=True):
     if create_dir:
         logfile.parent.mkdir(exist_ok=True, parents=True)
     return logfile
+
+
+class RaiseOnWarnHandler(logging.Handler):
+    def emit(self, record):
+        if record.levelno >= logging.WARNING:
+            raise WarningLoggedError(
+                    "A warning was logged with message " +
+                    record.getMessage())
+
+
+def setup_error_handler(mods=["satpy"]):
+    """Setup a handler that turns log warnings into exceptions.
+
+    By default only covers warnings issued by satpy.
+    """
+
+    rowh = RaiseOnWarnHandler()
+
+    for m in mods:
+        log = logging.getLogger(m)
+        log.setLevel(logging.DEBUG)
+        log.addHandler(rowh)
