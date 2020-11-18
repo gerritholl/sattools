@@ -72,3 +72,16 @@ def test_setup_error_handler():
     with pytest.raises(sattools.log.WarningLoggedError,
                        match="het water is koud"):
         logger.warning("het water is koud")
+    logger = logging.getLogger("vuodnabahta")
+    logger.removeHandler(logger.handlers[0])
+    assert not logger.handlers
+
+
+def test_raise_on_warn_context():
+    import sattools.log
+    logger = logging.getLogger("vuodnabahta.processing")
+    logger.warning("the mantle is toxic")
+    with sattools.log.RaiseOnWarnContext(logger):
+        with pytest.raises(sattools.log.WarningLoggedError,
+                           match="the mantle is toxic"):
+            logger.warning("the mantle is toxic")

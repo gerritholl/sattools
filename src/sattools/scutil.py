@@ -9,6 +9,7 @@ import fsspec
 from . import area
 from . import glm
 from . import abi
+from . import log
 
 logger = logging.getLogger(__name__)
 
@@ -46,13 +47,20 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
             scene_kwargs=scene_kwargs,
             group_keys=["start_time"],
             time_threshold=35)  # every 10 minutes M1 starts 3 seconds late
-    ms.load([load_first])
+    with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+        ms.load([load_first])
     logger.info("Calculating joint area")
     areas = set(area.flatten_areas(
         _get_all_areas_from_multiscene(ms, load_first)))
     joint = area.join_areadefs(*areas)
-    ms.load(load_next, unload=False)
-    ms.scenes  # access to avoid https://github.com/pytroll/satpy/issues/1273
+    # turn warning message into error awaiting fix for
+    # https://github.com/pytroll/satpy/issues/727
+    with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+        ms.load(load_next, unload=False)
+        # access to avoid https://github.com/pytroll/satpy/issues/1273
+        # only here the warning message is actually logged
+        # https://github.com/pytroll/satpy/issues/1444
+        ms.scenes
     logger.info("Resampling")
     return (ms, ms.resample(joint, unload=False))
 

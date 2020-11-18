@@ -148,3 +148,9 @@ def setup_error_handler(mods=["satpy"]):
         log = logging.getLogger(m)
         log.setLevel(logging.DEBUG)
         log.addHandler(rowh)
+
+
+class RaiseOnWarnContext(LoggingContext):
+    def __init__(self, logger):
+        rowh = RaiseOnWarnHandler()
+        super().__init__(logger, handler=rowh)
