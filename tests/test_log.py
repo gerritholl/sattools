@@ -1,6 +1,7 @@
 import datetime
 import logging
 import unittest.mock
+import pytest
 
 
 def test_setup_handler(tmp_path):
@@ -44,3 +45,30 @@ def test_logdir(tmp_path, monkeypatch):
     assert d == (tmp_path / "log" / "saas" /
                  "1900-01-01" / "grund-19000101T020304.log")
     assert d.parent.exists()
+
+
+def test_raise_on_warn_handler():
+    import sattools.log
+    rowh = sattools.log.RaiseOnWarnHandler()
+    logger = logging.getLogger("testlogger")
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(rowh)
+    logger.debug("test")
+    logger.info("test")
+    with pytest.raises(sattools.log.WarningLoggedError,
+                       match="my hovercraft is full of eels"):
+        logger.warning("my hovercraft is full of eels")
+    with pytest.raises(sattools.log.WarningLoggedError,
+                       match="throatwobbler mangrove"):
+        logger.error("throatwobbler mangrove")
+    logger = logging.getLogger("otherlogger")
+    logger.warning("nothing happens")
+
+
+def test_setup_error_handler():
+    import sattools.log
+    sattools.log.setup_error_handler(["vuodnabahta"])
+    logger = logging.getLogger("vuodnabahta.processing")
+    with pytest.raises(sattools.log.WarningLoggedError,
+                       match="het water is koud"):
+        logger.warning("het water is koud")
