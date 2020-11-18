@@ -50,12 +50,19 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
     with log.RaiseOnWarnContext(logging.getLogger("satpy")):
         ms.load([load_first])
     logger.info("Calculating joint area")
-    areas = set(area.flatten_areas(
-        _get_all_areas_from_multiscene(ms, load_first)))
-    joint = area.join_areadefs(*areas)
     # turn warning message into error awaiting fix for
     # https://github.com/pytroll/satpy/issues/727
     with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+        # even though for the sake of area calculations it would be acceptable
+        # to miss a scene here and there, I will want to load it for the
+        # remaining scenes anyway for the safe of NUS calculation.  Even there
+        # I don't technically need it for all scenes, only for those where I
+        # need if for calculation of NUS-1, NUS-2, NUS-5, NUS-15, etc., but
+        # that is becoming too complicated to bookkeep, so just ensure I have
+        # them always.
+        areas = set(area.flatten_areas(
+            _get_all_areas_from_multiscene(ms, load_first)))
+        joint = area.join_areadefs(*areas)
         ms.load(load_next, unload=False)
         # access to avoid https://github.com/pytroll/satpy/issues/1273
         # only here the warning message is actually logged
