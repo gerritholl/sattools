@@ -90,7 +90,10 @@ def prepare_abi_glm_ms_args(start_date, end_date, chans):
 
     Returns (glm_fs, glm_files, abi_fs, abi_files, scene_kwargs)
     """
-    glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
+    # FIXME: this is wrong; it's always choosing sector C even though
+    # the ABI files are coming from M1 and M2, which may not even overlap...
+    glm_files = list(glm.ensure_glm_for_period(
+        start_date, end_date, sector="C"))
     (abi_fs, abi_files) = abi.get_fs_and_files(
             start_date, end_date, sector="M*", chans=chans)
     lfs = fsspec.implementations.local.LocalFileSystem()
@@ -98,4 +101,4 @@ def prepare_abi_glm_ms_args(start_date, end_date, chans):
         "reader_kwargs": {
             "glm_l2": {"file_system": lfs},
             "abi_l1b": {"file_system": abi_fs}}}
-    return (lfs, glmc_files, abi_fs, abi_files, scene_kwargs)
+    return (lfs, glm_files, abi_fs, abi_files, scene_kwargs)

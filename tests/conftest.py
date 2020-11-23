@@ -167,12 +167,22 @@ def _mk_test_files(pattern, minutes):
 
 
 @pytest.fixture
-def glmc_files(monkeypatch, tmp_path):
-    from sattools.glm import get_pattern_dwd_glm_glmc
+def glm_files(monkeypatch, tmp_path):
+    from sattools.glm import get_pattern_dwd_glm
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
-    return _mk_test_files(
-            get_pattern_dwd_glm_glmc(),
+    glmc = _mk_test_files(
+            get_pattern_dwd_glm("C"),
             (0, 1, 3, 5))
+    glmf = _mk_test_files(
+            get_pattern_dwd_glm("F"),
+            (0, 2, 5))
+    glmm1 = _mk_test_files(
+            get_pattern_dwd_glm("M1"),
+            (0, 5, 8))
+    glmm2 = _mk_test_files(
+            get_pattern_dwd_glm("M2"),
+            (0, 2, 4))
+    return glmc + glmf + glmm1 + glmm2
 
 
 @pytest.fixture

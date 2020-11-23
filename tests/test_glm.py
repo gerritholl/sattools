@@ -10,21 +10,36 @@ from conftest import _mk_test_files
 
 
 def test_get_basedir(tmp_path, monkeypatch):
-    from sattools.glm import get_dwd_glm_glmc_basedir
+    from sattools.glm import get_dwd_glm_basedir
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
-    d = get_dwd_glm_glmc_basedir()
-    assert d == pathlib.Path(tmp_path / "nas" / "GLM" / "GLMC" / "1min")
+    for m in ("C", "F", "M1", "M2"):
+        d = get_dwd_glm_basedir(m)
+        assert d == pathlib.Path(tmp_path / "nas" / "GLM" /
+                                 f"GLM{m:s}" / "1min")
 
 
 def test_get_pattern(tmp_path, monkeypatch):
-    from sattools.glm import get_pattern_dwd_glm_glmc
+    from sattools.glm import get_pattern_dwd_glm
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
-    p = get_pattern_dwd_glm_glmc()
-    assert p == str(pathlib.Path(
-        tmp_path / "nas" / "GLM" / "GLMC" / "1min" / "{year}/{month}/"
-        "{day}/{hour}/"
-        "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
-        "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc"))
+    for m in "CF":
+        p = get_pattern_dwd_glm(m)
+        assert p == str(pathlib.Path(
+            tmp_path / "nas" / "GLM" / f"GLM{m:s}" / "1min" / "{year}/{month}/"
+            "{day}/{hour}/"
+            f"OR_GLM-L2-GLM{m:s}-M3_G16_"
+            "s{year}{doy}{hour}{minute}{second}*_"
+            "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc"))
+    for i in (1, 2):
+        # NB: until the fix for
+        # https://github.com/deeplycloudy/glmtools/issues/73 the output
+        # filenames always show M1 as the sector
+        p = get_pattern_dwd_glm(f"M{i:d}")
+        assert p == str(pathlib.Path(
+            tmp_path / "nas" / "GLM" / f"GLMM{i:d}" / "1min" /
+            "{year}/{month}/{day}/{hour}/"
+            "OR_GLM-L2-GLMM1-M3_G16_"
+            "s{year}{doy}{hour}{minute}{second}*_"
+            "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc"))
 
 
 @patch("appdirs.user_cache_dir")
@@ -80,10 +95,10 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog,
 @patch("sattools.glm.run_glmtools")
 @patch("appdirs.user_cache_dir")
 @patch("s3fs.S3FileSystem")
-def test_ensure_glmc(sS, au, sgr, glmc_files, lcfa_pattern,
-                     lcfa_files, tmp_path, monkeypatch):
-    from sattools.glm import ensure_glmc_for_period
-    from sattools.glm import get_pattern_dwd_glm_glmc
+def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
+                    lcfa_files, tmp_path, monkeypatch):
+    from sattools.glm import ensure_glm_for_period
+    from sattools.glm import get_pattern_dwd_glm
     from fsspec.implementations.local import LocalFileSystem
     from typhon.files.fileset import FileInfo
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
@@ -91,22 +106,25 @@ def test_ensure_glmc(sS, au, sgr, glmc_files, lcfa_pattern,
     sS.return_value = LocalFileSystem()
     with patch("sattools.glm.pattern_s3_glm_lcfa", lcfa_pattern):
         with pytest.raises(RuntimeError):  # files not created when testing
-            next(ensure_glmc_for_period(
+            next(ensure_glm_for_period(
                     datetime.datetime(1900, 1, 1, 0, 0, 0),
-                    datetime.datetime(1900, 1, 1, 0, 6, 0)))
+                    datetime.datetime(1900, 1, 1, 0, 6, 0),
+                    sector="C"))
         sgr.assert_has_calls(
                 [call([tmp_path / "whole-file-cache" /
                        f"lcfa-fake-1900010100{m:>02d}00-00{m+1:>02d}00.nc"],
-                      max_files=60)
+                      max_files=60,
+                      sector="C")
                  for m in (2, 4)])
 
-        def fake_run(files, max_files):
+        def fake_run(files, max_files, sector="C"):
             """Create files when testing."""
-            _mk_test_files(get_pattern_dwd_glm_glmc(), (0, 1, 2, 3, 4, 5, 6))
+            _mk_test_files(get_pattern_dwd_glm(sector), (0, 1, 2, 3, 4, 5, 6))
         sgr.side_effect = fake_run
-        g = ensure_glmc_for_period(
+        g = ensure_glm_for_period(
                 datetime.datetime(1900, 1, 1, 0, 0, 0),
-                datetime.datetime(1900, 1, 1, 0, 6, 0))
+                datetime.datetime(1900, 1, 1, 0, 6, 0),
+                sector="C")
         fi = next(g)
         assert isinstance(fi, FileInfo)
         assert fi.path == str(
@@ -117,50 +135,100 @@ def test_ensure_glmc(sS, au, sgr, glmc_files, lcfa_pattern,
                             datetime.datetime(1900, 1, 1, 0, 1)]
 
 
-def test_find_coverage(glmc_files, tmp_path, monkeypatch):
-    from sattools.glm import find_glmc_coverage
+def test_find_coverage(glm_files, tmp_path, monkeypatch):
+    from sattools.glm import find_glm_coverage
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
-    covered = list(find_glmc_coverage(
+    covered = list(find_glm_coverage(
         datetime.datetime(1900, 1, 1, 0, 0, 0),
-        datetime.datetime(1900, 1, 1, 0, 6, 0)))
+        datetime.datetime(1900, 1, 1, 0, 6, 0),
+        sector="C"))
+    pI = pandas.Interval
+    pT = pandas.Timestamp
+
     assert covered == [
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:00:00"),
-                            pandas.Timestamp("1900-01-01T00:01:00")),
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:01:00"),
-                            pandas.Timestamp("1900-01-01T00:02:00")),
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:03:00"),
-                            pandas.Timestamp("1900-01-01T00:04:00")),
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:05:00"),
-                            pandas.Timestamp("1900-01-01T00:06:00"))]
-    covered = list(find_glmc_coverage(
+            pI(pT("1900-01-01T00:00:00"), pT("1900-01-01T00:01:00")),
+            pI(pT("1900-01-01T00:01:00"), pT("1900-01-01T00:02:00")),
+            pI(pT("1900-01-01T00:03:00"), pT("1900-01-01T00:04:00")),
+            pI(pT("1900-01-01T00:05:00"), pT("1900-01-01T00:06:00"))]
+    covered = list(find_glm_coverage(
         datetime.datetime(1900, 1, 2, 3, 4, 5),
-        datetime.datetime(1900, 5, 4, 3, 2, 1)))
+        datetime.datetime(1900, 5, 4, 3, 2, 1),
+        sector="C"))
     assert covered == []
+    covered = list(find_glm_coverage(
+        datetime.datetime(1900, 1, 1, 0, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 6, 0),
+        sector="F"))
+    assert covered == [
+            pI(pT("1900-01-01T00:00:00"), pT("1900-01-01T00:01:00")),
+            pI(pT("1900-01-01T00:02:00"), pT("1900-01-01T00:03:00")),
+            pI(pT("1900-01-01T00:05:00"), pT("1900-01-01T00:06:00"))]
+    covered = list(find_glm_coverage(
+        datetime.datetime(1900, 1, 1, 0, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 9, 0),
+        sector="M1"))
+    assert covered == [
+            pI(pT("1900-01-01T00:00:00"), pT("1900-01-01T00:01:00")),
+            pI(pT("1900-01-01T00:05:00"), pT("1900-01-01T00:06:00")),
+            pI(pT("1900-01-01T00:08:00"), pT("1900-01-01T00:09:00"))]
+    covered = list(find_glm_coverage(
+        datetime.datetime(1900, 1, 1, 0, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 9, 0),
+        sector="M2"))
+    assert covered == [
+            pI(pT("1900-01-01T00:00:00"), pT("1900-01-01T00:01:00")),
+            pI(pT("1900-01-01T00:02:00"), pT("1900-01-01T00:03:00")),
+            pI(pT("1900-01-01T00:04:00"), pT("1900-01-01T00:05:00"))]
 
 
-def test_find_gaps(glmc_files, monkeypatch, tmp_path):
-    from sattools.glm import find_glmc_coverage_gaps
+def test_find_gaps(glm_files, monkeypatch, tmp_path):
+    from sattools.glm import find_glm_coverage_gaps
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
-    gaps = list(find_glmc_coverage_gaps(
+    pI = pandas.Interval
+    pT = pandas.Timestamp
+    gaps = list(find_glm_coverage_gaps(
         datetime.datetime(1900, 1, 1, 0, 0),
-        datetime.datetime(1900, 1, 1, 0, 8)))
+        datetime.datetime(1900, 1, 1, 0, 8),
+        sector="C"))
     assert gaps == [
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:02:00"),
-                            pandas.Timestamp("1900-01-01T00:03:00")),
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:04:00"),
-                            pandas.Timestamp("1900-01-01T00:05:00")),
-            pandas.Interval(pandas.Timestamp("1900-01-01T00:06:00"),
-                            pandas.Timestamp("1900-01-01T00:08:00"))]
-    gaps = list(find_glmc_coverage_gaps(
+        pI(pT("1900-01-01T00:02:00"), pT("1900-01-01T00:03:00")),
+        pI(pT("1900-01-01T00:04:00"), pT("1900-01-01T00:05:00")),
+        pI(pT("1900-01-01T00:06:00"), pT("1900-01-01T00:08:00"))]
+    gaps = list(find_glm_coverage_gaps(
         datetime.datetime(1900, 1, 2, 0, 0),
-        datetime.datetime(1900, 1, 2, 0, 8)))
+        datetime.datetime(1900, 1, 2, 0, 8),
+        sector="C"))
     assert gaps == [
-            pandas.Interval(pandas.Timestamp("1900-01-02T00:00:00"),
-                            pandas.Timestamp("1900-01-02T00:08:00"))]
-    gaps = list(find_glmc_coverage_gaps(
+        pI(pT("1900-01-02T00:00:00"), pT("1900-01-02T00:08:00"))]
+    gaps = list(find_glm_coverage_gaps(
         datetime.datetime(1900, 1, 1, 0, 0),
-        datetime.datetime(1900, 1, 1, 0, 2)))
-    assert list(gaps) == []
+        datetime.datetime(1900, 1, 1, 0, 2),
+        sector="C"))
+    assert gaps == []
+    gaps = list(find_glm_coverage_gaps(
+        datetime.datetime(1900, 1, 1, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 8),
+        sector="F"))
+    assert gaps == [
+        pI(pT("1900-01-01T00:01:00"), pT("1900-01-01T00:02:00")),
+        pI(pT("1900-01-01T00:03:00"), pT("1900-01-01T00:05:00")),
+        pI(pT("1900-01-01T00:06:00"), pT("1900-01-01T00:08:00"))]
+    gaps = list(find_glm_coverage_gaps(
+        datetime.datetime(1900, 1, 1, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 10),
+        sector="M1"))
+    assert gaps == [
+        pI(pT("1900-01-01T00:01:00"), pT("1900-01-01T00:05:00")),
+        pI(pT("1900-01-01T00:06:00"), pT("1900-01-01T00:08:00")),
+        pI(pT("1900-01-01T00:09:00"), pT("1900-01-01T00:10:00"))]
+    gaps = list(find_glm_coverage_gaps(
+        datetime.datetime(1900, 1, 1, 0, 0),
+        datetime.datetime(1900, 1, 1, 0, 10),
+        sector="M2"))
+    assert gaps == [
+        pI(pT("1900-01-01T00:01:00"), pT("1900-01-01T00:02:00")),
+        pI(pT("1900-01-01T00:03:00"), pT("1900-01-01T00:04:00")),
+        pI(pT("1900-01-01T00:05:00"), pT("1900-01-01T00:10:00"))]
 
 
 def test_run_glmtools(tmp_path, caplog, monkeypatch):
@@ -170,10 +238,26 @@ def test_run_glmtools(tmp_path, caplog, monkeypatch):
         mocks = [MagicMock() for _ in range(5)]
         sgl.return_value.grid_setup.return_value = mocks
         with caplog.at_level(logging.INFO):
-            run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"])
+            run_glmtools(
+                    [tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
+                    sector="F")
             assert (f"Running glmtools for {(tmp_path / 'lcfa1.nc')!s}, "
                     f"{(tmp_path / 'lcfa2.nc')!s}" in caplog.text)
         mocks[0].assert_called_once()
+        # confirm we passed the correct sector
+        assert (cal := sgl().create_parser().parse_args.call_args_list
+                [0][0][0])[
+                cal.index("--goes_sector") + 1] == "full"
+        # try with meso sector, requiring lat/lon
+        run_glmtools(
+                [tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
+                sector="M1", lat=45, lon=-120)
+        assert (cal := sgl().create_parser().parse_args.call_args_list
+                [-1][0][0])[
+                cal.index("--goes_sector") + 1] == "meso"
+        assert cal[cal.index("--ctr_lat") + 1] == "45.00"
+        assert cal[cal.index("--ctr_lon") + 1] == "-120.00"
+        # try with splitting
         mocks[0].reset_mock()
         run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
                      max_files=1)
