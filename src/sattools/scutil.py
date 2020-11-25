@@ -21,7 +21,8 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
     Given a list of files where area may vary between files, get a multiscene
     where each scene is resamled to the smallest enclosing area.  This is
     particularly useful when the multiscene consists of a range of ABI M1 and
-    M2 scenes which may shift during the multiscene.
+    M2 scenes which may shift during the multiscene.  This may be interesting
+    when creating a movie but isn't great for analysis.
 
     Args:
         files (list of str or path): Files containing data.  Passed to
@@ -85,17 +86,90 @@ def _get_all_areas_from_multiscene(ms, datasets=None):
     return S
 
 
-def prepare_abi_glm_ms_args(start_date, end_date, chans):
+def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
     """Prepare args for ABI/GLM joint multiscene.
 
     Returns (glm_fs, glm_files, abi_fs, abi_files, scene_kwargs)
     """
-    glmc_files = list(glm.ensure_glmc_for_period(start_date, end_date))
+    if sector not in "CF":
+        raise ValueError(
+                "Only sectors 'C' and 'F' are supported here. "
+                "For MESO use get_abi_glm_multiscenes.")
+    glm_files = list(glm.ensure_glm_for_period(
+        start_date, end_date, sector=sector))
     (abi_fs, abi_files) = abi.get_fs_and_files(
-            start_date, end_date, sector="M*", chans=chans)
+            start_date, end_date, sector=sector, chans=chans)
     lfs = fsspec.implementations.local.LocalFileSystem()
     scene_kwargs = {
         "reader_kwargs": {
             "glm_l2": {"file_system": lfs},
             "abi_l1b": {"file_system": abi_fs}}}
-    return (lfs, glmc_files, abi_fs, abi_files, scene_kwargs)
+    return (lfs, glm_files, abi_fs, abi_files, scene_kwargs)
+
+
+def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
+                            from_glm=["flash_extent_density"],
+                            limit=None):
+    """Get one or more multiscenes for period.
+
+    Get multiscenes containing ABI and GLM in period.  If sector is M1 or M2,
+    yield a new multiscene whenever the area covered by the sector changes.
+
+    Note that the area for the GLM-based flash_extent_density could differ
+    slightly from the one for the ABI channels, so you may have to resample the
+    result.
+    """
+
+    if sector not in {"M1", "M2", "C", "F"}:
+        raise ValueError(
+                f"Invalid sector.  Expected M1, M2, C, or F.  Got {sector:s}")
+    if sector.startswith("M"):
+        # first iteration through ABI to know what areas covered
+        (abi_fs, files) = abi.get_fs_and_files(
+                start_date, end_date, sector=sector, chans=chans[0])
+        lfs = fsspec.implementations.local.LocalFileSystem()
+        ms = satpy.MultiScene.from_files(
+                [str(x) for x in files],
+                reader=["abi_l1b"],
+                scene_kwargs={
+                    "reader_kwargs": {
+                        "abi_l1b": {"file_system": abi_fs}}},
+                group_keys=["start_time"],
+                time_threshold=30)
+        with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+            ms.load([f"C{chans[0]:>02d}"])
+            ms.scenes
+        for (cnt, split) in enumerate(abi.split_meso(ms)):
+            if limit is not None and cnt >= limit:
+                break
+            here_start = split.scenes[0][f"C{chans[0]:>02d}"].attrs[
+                    "start_time"]
+            here_end = split.scenes[-1][f"C{chans[0]:>02d}"].attrs["end_time"]
+            clon, clat = area.centre(
+                    split.first_scene[f"C{chans[0]:>02d}"].attrs["area"])
+            here_glm_files = list(glm.ensure_glm_for_period(
+                here_start, here_end, sector=sector,
+                lon=clon, lat=clat))
+            here_abi_files = abi.get_fs_and_files(
+                    here_start, here_end, sector=sector, chans=chans)[1]
+            here_ms = satpy.MultiScene.from_files(
+                    [str(x) for x in here_glm_files] +
+                    [str(x) for x in here_abi_files],
+                    reader=["abi_l1b", "glm_l2"],
+                    scene_kwargs={
+                        "reader_kwargs": {
+                            "abi_l1b": {"file_system": abi_fs},
+                            "glm_l2": {"file_system": lfs}}},
+                        group_keys=["start_time"],
+                        time_threshold=35)
+            with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+                here_ms.load([f"C{c:>02d}" for c in chans] + from_glm)
+                here_ms.scenes
+            yield here_ms
+    else:
+        raise NotImplementedError(
+                "Processing other modes than M1 or M2 is currently not "
+                "supported.  The processing currently assumes there is a "
+                "one-to-one match between GLM-files and ABI-files, and GLM "
+                "processing remains hardcoded for 1-minute. "
+                "See https://github.com/gerritholl/sattools/issues/34")

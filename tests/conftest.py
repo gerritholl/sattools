@@ -73,7 +73,7 @@ def fake_multiscene():
 
 @pytest.fixture
 def fake_multiscene2():
-    """Like fake_multiscene1, but with real areas (one stacked).
+    """Like fake_multiscene, but with real areas (one stacked).
     """
     from satpy.dataset.dataid import WavelengthRange
     from satpy.tests.utils import make_dataid
@@ -118,6 +118,43 @@ def fake_multiscene3(fake_multiscene2):
         fms.scenes[2][k].attrs["area"] = fake_multiscene2.scenes[0][k].\
                 attrs["area"]
     return fms
+
+
+@pytest.fixture
+def fake_multiscene4():
+    """Like fake_multiscene2, but with varying areas (none stacked).
+    """
+    from satpy.dataset.dataid import WavelengthRange
+    from satpy.tests.utils import make_dataid
+    common_attrs = {}
+    wl = {"C08": WavelengthRange(5.7, 6.2, 6.7),
+          "C10": WavelengthRange(6.8, 7.3, 7.8),
+          "C14": WavelengthRange(10, 11, 12)}
+    content = {make_dataid(name=x, wavelength=wl.get(x)):
+               numpy.arange(5*5).reshape(5, 5)
+               for x in ("C08", "C10", "C14")}
+    content[make_dataid(name="flash_extent_density")] = numpy.arange(
+            5*5).reshape(5, 5)+1
+    areas = [pyresample.create_area_def(
+             "test-area",
+             {"proj": "eqc", "lat_ts": 0, "lat_0": 0, "lon_0": 0,
+              "x_0": 0, "y_0": 0, "ellps": "sphere", "units": "m",
+              "no_defs": None, "type": "crs"},
+             units="m",
+             shape=(5, 5),
+             resolution=1000,
+             center=(10*i, 20*i)) for i in range(3)]
+
+    aids = [0, 0, 0, 0, 0, 0, 1, 1, 1, 2]
+    scenes = [satpy.tests.utils.make_fake_scene(
+        content.copy(),
+        common_attrs=common_attrs,
+        area=areas[i]) for i in aids]
+    for (i, sc) in enumerate(scenes):
+        for da in sc.values():
+            da.attrs["start_time"] = datetime.datetime(1900, 1, 1, 0, i)
+            da.attrs["end_time"] = datetime.datetime(1900, 1, 1, 0, i+1)
+    return satpy.MultiScene(scenes)
 
 
 # @pytest.fixture
@@ -167,12 +204,22 @@ def _mk_test_files(pattern, minutes):
 
 
 @pytest.fixture
-def glmc_files(monkeypatch, tmp_path):
-    from sattools.glm import get_pattern_dwd_glm_glmc
+def glm_files(monkeypatch, tmp_path):
+    from sattools.glm import get_pattern_dwd_glm
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
-    return _mk_test_files(
-            get_pattern_dwd_glm_glmc(),
+    glmc = _mk_test_files(
+            get_pattern_dwd_glm("C"),
             (0, 1, 3, 5))
+    glmf = _mk_test_files(
+            get_pattern_dwd_glm("F"),
+            (0, 2, 5))
+    glmm1 = _mk_test_files(
+            get_pattern_dwd_glm("M1"),
+            (0, 5, 8))
+    glmm2 = _mk_test_files(
+            get_pattern_dwd_glm("M2"),
+            (0, 2, 4))
+    return glmc + glmf + glmm1 + glmm2
 
 
 @pytest.fixture

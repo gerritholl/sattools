@@ -20,15 +20,21 @@ glm_script = "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py"
 logger = logging.getLogger(__name__)
 
 
-def get_dwd_glm_glmc_basedir():
+def get_dwd_glm_basedir(sector="C"):
     base = os.environ["NAS_DATA"]
-    return pathlib.Path(base) / "GLM" / "GLMC" / "1min"
+    if sector not in ("C", "F", "M1", "M2"):
+        raise ValueError(f"Invalid sector: {sector!s}. "
+                         "Expected 'C', 'F', 'M1', or 'M2'.")
+    return pathlib.Path(base) / "GLM" / f"GLM{sector:s}" / "1min"
 
 
-def get_pattern_dwd_glm_glmc():
-    return str(get_dwd_glm_glmc_basedir() /
+def get_pattern_dwd_glm(sector="C"):
+    bd = get_dwd_glm_basedir(sector=sector)
+    seclab = sector if sector in ("C", "F", "M1") else "M1"
+    return str(bd /
                "{year}/{month}/{day}/{hour}/"
-               "OR_GLM-L2-GLMC-M3_G16_s{year}{doy}{hour}{minute}{second}*_"
+               f"OR_GLM-L2-GLM{seclab:s}-M3_G16_"
+               "s{year}{doy}{hour}{minute}{second}*_"
                "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_"
                "c*.nc")
 
@@ -67,46 +73,53 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
         yield exp
 
 
-def ensure_glmc_for_period(start_date, end_date):
+def ensure_glm_for_period(
+        start_date, end_date, sector="C", lat=None, lon=None):
     """Get gridded GLM for period, unless already existing.
 
-    Yields resulting GLMC files.
+    Yields resulting GLM files.
     """
     logger.debug(
-            "Locating GLMC gaps between "
-            f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
-    for gap in find_glmc_coverage_gaps(start_date, end_date):
+            "Locating GLM gaps between "
+            f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}, "
+            f"sector {sector:s}")
+    for gap in find_glm_coverage_gaps(start_date, end_date, sector=sector):
         logger.debug(
                 "Found gap between "
                 f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
         files = list(ensure_glm_lcfa_for_period(gap.left, gap.right))
-        run_glmtools(files, max_files=60)
-    logger.debug("GLMC should now be fully covered")
+        if sector in "CF":
+            run_glmtools(files, max_files=60, sector=sector)
+        else:
+            run_glmtools(files, max_files=60, sector=sector,
+                         lat=lat, lon=lon)
+            logger.debug(f"GLM {sector:s} should now be fully covered")
     # there should be no more gaps now!
-    for gap in find_glmc_coverage_gaps(start_date, end_date):
+    for gap in find_glm_coverage_gaps(
+            start_date, end_date, sector=sector):
         raise RuntimeError(
-                "I have tried to ensure GLMC by running glmtools, but "
-                "data still appear to be missing for "
+                f"I have tried to ensure GLM {sector:s} by running glmtools, "
+                "but data still appear to be missing for "
                 f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
-    glmc = FileSet(path=get_pattern_dwd_glm_glmc(), name="glmc")
-    yield from glmc.find(start_date, end_date, no_files_error=True)
+    glm = FileSet(path=get_pattern_dwd_glm(sector), name="glm")
+    yield from glm.find(start_date, end_date, no_files_error=True)
 
 
-def find_glmc_coverage(start_date, end_date):
+def find_glm_coverage(start_date, end_date, sector="C"):
     """Yield intervals corresponding to GLMC coverage.
     """
-    glmc = FileSet(path=get_pattern_dwd_glm_glmc(), name="glmc")
-    for file_info in glmc.find(start_date, end_date, no_files_error=False):
+    glm = FileSet(path=get_pattern_dwd_glm(sector=sector), name="glm")
+    for file_info in glm.find(start_date, end_date, no_files_error=False):
         yield pandas.Interval(
                 pandas.Timestamp(file_info.times[0]),
                 pandas.Timestamp(file_info.times[1]))
 
 
-def find_glmc_coverage_gaps(start_date, end_date):
+def find_glm_coverage_gaps(start_date, end_date, sector="C"):
     """Yield intervals not covered by GLMC in period.
     """
     last = pandas.Timestamp(start_date)
-    for iv in find_glmc_coverage(start_date, end_date):
+    for iv in find_glm_coverage(start_date, end_date, sector=sector):
         if iv.left > last:
             yield pandas.Interval(last, iv.left)
         last = iv.right
@@ -125,7 +138,7 @@ def load_file(name, path):
     return module
 
 
-def run_glmtools(files, max_files=180):
+def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
     # how to call this?  should not be needed as a subprocess, although maybe
     # advantageous to keep things separate, can I at least determine the
     # location for make_GLM_grids in a more portable manner?
@@ -135,17 +148,26 @@ def run_glmtools(files, max_files=180):
     idx = 0
     glmtool = load_file("glmtool", glm_script)
     parser = glmtool.create_parser()
+    glm_names = {"C": "conus",
+                 "M1": "meso",
+                 "M2": "meso",
+                 "F": "full"}
     while idx < len(files):
         these_files = files[idx:(idx+max_files)]
         logger.info("Running glmtools for " + ", ".join(
                     str(f) for f in these_files))
-        args = parser.parse_args(
-                ["--fixed_grid", "--split_events",
-                 "--goes_position", "east", "--goes_sector", "conus",
-                 "--dx=2.0", "--dy=2.0", "--dt", "60", "-o",
-                 str(get_dwd_glm_glmc_basedir()) +
-                 "/{start_time:%Y/%m/%d/%H}/{dataset_name}",
-                 *(str(f) for f in these_files)])
+        arg_list = ["--fixed_grid", "--split_events",
+                    "--goes_position", "east", "--goes_sector",
+                    glm_names[sector],
+                    "--dx=2.0", "--dy=2.0", "--dt", "60"]
+        if glm_names[sector] == "meso":
+            arg_list.extend(["--ctr_lat", f"{lat:.2f}", "--ctr_lon",
+                             f"{lon:.2f}"])
+        arg_list.extend([
+            "-o", str(get_dwd_glm_basedir(sector=sector)) +
+            "/{start_time:%Y/%m/%d/%H}/{dataset_name}",
+            *(str(f) for f in these_files)])
+        args = parser.parse_args(arg_list)
         # this part taken from glmtools example script glm_script
         (gridder, glm_filenames, start_time, end_time, grid_kwargs) = \
             glmtool.grid_setup(args)
