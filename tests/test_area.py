@@ -3,6 +3,7 @@ import numpy.testing
 
 from pyresample import create_area_def
 
+
 def test_join_areadefs():
     from sattools.area import join_areadefs
     proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,

@@ -144,7 +144,8 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
         for (cnt, split) in enumerate(abi.split_meso(ms)):
             if limit is not None and cnt >= limit:
                 break
-            here_start = split.scenes[0][f"C{chans[0]:>02d}"].attrs["start_time"]
+            here_start = split.scenes[0][f"C{chans[0]:>02d}"].attrs[
+                    "start_time"]
             here_end = split.scenes[-1][f"C{chans[0]:>02d}"].attrs["end_time"]
             clon, clat = area.centre(
                     split.first_scene[f"C{chans[0]:>02d}"].attrs["area"])

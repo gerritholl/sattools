@@ -9,6 +9,7 @@ import fsspec.implementations.cached
 import satpy
 from typhon.files.fileset import FileSet
 
+
 def get_fs_and_files(start_date, end_date, sector="F", chans=14):
     """Return filesystem object and files for ABI for period.
 

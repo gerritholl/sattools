@@ -54,7 +54,6 @@ def test_split_meso(fake_multiscene4):
     """Test splitting MESO by area.
     """
     from sattools.abi import split_meso
-    from sattools.scutil import _get_all_areas_from_multiscene
     L = list(split_meso(fake_multiscene4))
     assert len(L) == 3
     assert len(L[0].scenes) == 6

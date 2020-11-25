@@ -3,7 +3,6 @@ import unittest.mock
 
 import satpy
 import pytest
-import pandas
 
 
 def test_get_all_areas(fake_multiscene):
@@ -72,7 +71,7 @@ def test_prepare_args(sag, sge, tmp_path):
                       times=[datetime.datetime(1900, 1, 1, 0, i),
                              datetime.datetime(1900, 1, 1, 0, i+1)],
                       attr={})
-            for i in range(5)])
+             for i in range(5)])
     (gfs, gf, afs, af, kw) = prepare_abi_glm_ms_args(
             datetime.datetime(1900, 1, 1, 0),
             datetime.datetime(1900, 1, 1, 6),
@@ -108,20 +107,21 @@ def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
                       times=[datetime.datetime(1900, 1, 1, 0, i),
                              datetime.datetime(1900, 1, 1, 0, i+1)],
                       attr={})
-            for i in range(5)])
+             for i in range(5)])
 
     others = list(split_meso(fake_multiscene4))
+
     class FakeMultiScene(satpy.MultiScene):
         @classmethod
         def from_files(cls, files_to_sort, reader=None,
-                            ensure_all_readers=False, scene_kwargs=None,
-                            **kwargs):
+                       ensure_all_readers=False, scene_kwargs=None,
+                       **kwargs):
             if reader == ["abi_l1b"]:
                 return fake_multiscene4
             else:
                 return others[0]
 
-    with unittest.mock.patch("satpy.MultiScene", new=FakeMultiScene) as sM:
+    with unittest.mock.patch("satpy.MultiScene", new=FakeMultiScene):
         mss = list(get_abi_glm_multiscenes(
                 datetime.datetime(1900, 1, 1, 0, 0),
                 datetime.datetime(1900, 1, 1, 1, 0),
