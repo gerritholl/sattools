@@ -127,6 +127,9 @@ def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
                 datetime.datetime(1900, 1, 1, 1, 0),
                 chans=[8, 10],
                 sector="M1"))
+        assert "C08" in mss[0].first_scene
+        assert "C10" in mss[0].first_scene
+        assert "flash_extent_density" in mss[0].first_scene
         # should be requesting GLM for the first six minutes, sector M1,
         # lat/lon centred at 0
         sge.assert_any_call(

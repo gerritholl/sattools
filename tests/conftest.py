@@ -101,7 +101,6 @@ def fake_multiscene2():
     return satpy.MultiScene([sc1, sc2, sc3])
 
 
-
 @pytest.fixture
 def fake_multiscene_empty():
     """Fake multiscene with empty scenes.
@@ -134,6 +133,8 @@ def fake_multiscene4():
     content = {make_dataid(name=x, wavelength=wl.get(x)):
                numpy.arange(5*5).reshape(5, 5)
                for x in ("C08", "C10", "C14")}
+    content[make_dataid(name="flash_extent_density")] = numpy.arange(
+            5*5).reshape(5, 5)+1
     areas = [pyresample.create_area_def(
              "test-area",
              {"proj": "eqc", "lat_ts": 0, "lat_0": 0, "lon_0": 0,

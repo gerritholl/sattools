@@ -112,6 +112,7 @@ def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
 
 
 def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
+                            from_glm=["flash_extent_density"],
                             limit=None):
     """Get one or more multiscenes for period.
 
@@ -158,7 +159,7 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
                             "glm_l2": {"file_system": lfs}}},
                         group_keys=["start_time"],
                         time_threshold=35)
-            here_ms.load([f"C{c:>02d}" for c in chans])
+            here_ms.load([f"C{c:>02d}" for c in chans] + from_glm)
             yield here_ms
     else:
         (lfs, glm_files, abi_fs, abi_files, scene_kwargs) = \
