@@ -167,7 +167,8 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
                 "Processing other modes than M1 or M2 is currently not "
                 "supported.  The processing currently assumes there is a "
                 "one-to-one match between GLM-files and ABI-files, and GLM "
-                "processing remains hardcoded for 1-minute.")
+                "processing remains hardcoded for 1-minute. "
+                "See https://github.com/gerritholl/sattools/issues/34")
         (lfs, glm_files, abi_fs, abi_files, scene_kwargs) = \
             prepare_abi_glm_ms_args(start_date, end_date, chans, sector=sector)
         ms = satpy.MultiScene.from_files(

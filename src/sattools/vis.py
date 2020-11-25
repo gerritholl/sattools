@@ -186,7 +186,9 @@ def show_video_abi_glm(
 def show_video_abi_glm_times(start_date, end_date, out_dir):
     """Show a ABI/GLM video between start_date and end_date.
     """
-    raise NotImplementedError("Showing a video is currently broken.")
+    raise NotImplementedError(
+        "Showing a video is currently broken.  "
+        "See https://github.com/gerritholl/sattools/issues/35")
     (lfs, glmc_files, abi_fs, abi_files,
      scene_kwargs) = scutil.prepare_abi_glm_ms_args(
              start_date, end_date, chans={14})
