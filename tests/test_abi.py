@@ -60,4 +60,8 @@ def test_split_meso(fake_multiscene4):
     assert len(L[0].scenes) == 6
     assert len(L[1].scenes) == 3
     assert len(L[2].scenes) == 1
-    assert all(ms.all_same_area for ms in L)
+    # assert that each dataset has the same area throughout the multiscene
+    # (although areas between datasets can still differ)
+    for did in fake_multiscene4.first_scene.keys():
+        for ms in L:
+            assert len({sc[did].attrs["area"] for sc in ms}) == 1

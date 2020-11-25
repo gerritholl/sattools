@@ -118,6 +118,10 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
 
     Get multiscenes containing ABI and GLM in period.  If sector is M1 or M2,
     yield a new multiscene whenever the area covered by the sector changes.
+
+    Note that the area for the GLM-based flash_extent_density could differ
+    slightly from the one for the ABI channels, so you may have to resample the
+    result.
     """
 
     if sector not in {"M1", "M2", "C", "F"}:
