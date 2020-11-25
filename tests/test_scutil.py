@@ -138,11 +138,12 @@ def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
                 sector="M1",
                 lat=0.0,
                 lon=0.0)
-        mss = list(get_abi_glm_multiscenes(
-                datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 1, 0),
-                chans=[8, 10],
-                sector="F"))
+        with pytest.raises(NotImplementedError):
+            mss = list(get_abi_glm_multiscenes(
+                    datetime.datetime(1900, 1, 1, 0, 0),
+                    datetime.datetime(1900, 1, 1, 1, 0),
+                    chans=[8, 10],
+                    sector="F"))
         with pytest.raises(ValueError):
             mss = list(get_abi_glm_multiscenes(
                     datetime.datetime(1900, 1, 1, 0, 0),
