@@ -91,14 +91,10 @@ def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
 
     Returns (glm_fs, glm_files, abi_fs, abi_files, scene_kwargs)
     """
-    # FIXME: this is wrong; it's always choosing sector C even though
-    # the ABI files are coming from M1 and M2, which may not even overlap...
-    # but I'd need to read the ABI files first before gathering files for
-    # meso...
     if sector not in "CF":
         raise ValueError(
                 "Only sectors 'C' and 'F' are supported here. "
-                "For MESO use TBD.")
+                "For MESO use get_abi_glm_multiscenes.")
     glm_files = list(glm.ensure_glm_for_period(
         start_date, end_date, sector=sector))
     (abi_fs, abi_files) = abi.get_fs_and_files(
