@@ -21,7 +21,8 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
     Given a list of files where area may vary between files, get a multiscene
     where each scene is resamled to the smallest enclosing area.  This is
     particularly useful when the multiscene consists of a range of ABI M1 and
-    M2 scenes which may shift during the multiscene.
+    M2 scenes which may shift during the multiscene.  This may be interesting
+    when creating a movie but isn't great for analysis.
 
     Args:
         files (list of str or path): Files containing data.  Passed to
@@ -85,20 +86,92 @@ def _get_all_areas_from_multiscene(ms, datasets=None):
     return S
 
 
-def prepare_abi_glm_ms_args(start_date, end_date, chans):
+def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
     """Prepare args for ABI/GLM joint multiscene.
 
     Returns (glm_fs, glm_files, abi_fs, abi_files, scene_kwargs)
     """
     # FIXME: this is wrong; it's always choosing sector C even though
     # the ABI files are coming from M1 and M2, which may not even overlap...
+    # but I'd need to read the ABI files first before gathering files for
+    # meso...
+    if sector not in "CF":
+        raise ValueError(
+                "Only sectors 'C' and 'F' are supported here. "
+                "For MESO use TBD.")
     glm_files = list(glm.ensure_glm_for_period(
-        start_date, end_date, sector="C"))
+        start_date, end_date, sector=sector))
     (abi_fs, abi_files) = abi.get_fs_and_files(
-            start_date, end_date, sector="M*", chans=chans)
+            start_date, end_date, sector=sector, chans=chans)
     lfs = fsspec.implementations.local.LocalFileSystem()
     scene_kwargs = {
         "reader_kwargs": {
             "glm_l2": {"file_system": lfs},
             "abi_l1b": {"file_system": abi_fs}}}
     return (lfs, glm_files, abi_fs, abi_files, scene_kwargs)
+
+
+def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
+                            limit=None):
+    """Get one or more multiscenes for period.
+
+    Get multiscenes containing ABI and GLM in period.  If sector is M1 or M2,
+    yield a new multiscene whenever the area covered by the sector changes.
+    """
+
+    if sector not in {"M1", "M2", "C", "F"}:
+        raise ValueError(
+                f"Invalid sector.  Expected M1, M2, C, or F.  Got {sector:s}")
+    if sector.startswith("M"):
+        # first iteration through ABI to know what areas covered
+        (abi_fs, files) = abi.get_fs_and_files(
+                start_date, end_date, sector=sector, chans=chans[0])
+        lfs = fsspec.implementations.local.LocalFileSystem()
+        ms = satpy.MultiScene.from_files(
+                [str(x) for x in files],
+                reader=["abi_l1b"],
+                scene_kwargs={
+                    "reader_kwargs": {
+                        "abi_l1b": {"file_system": abi_fs}}},
+                group_keys=["start_time"],
+                time_threshold=30)
+        ms.load([f"C{chans[0]:>02d}"])
+        for (cnt, split) in enumerate(abi.split_meso(ms)):
+            if limit is not None and cnt >= limit:
+                break
+            here_start = split.scenes[0][f"C{chans[0]:>02d}"].attrs["start_time"]
+            here_end = split.scenes[-1][f"C{chans[0]:>02d}"].attrs["end_time"]
+            clon, clat = area.centre(
+                    split.first_scene[f"C{chans[0]:>02d}"].attrs["area"])
+            here_glm_files = list(glm.ensure_glm_for_period(
+                here_start, here_end, sector=sector,
+                lon=clon, lat=clat))
+            here_abi_files = abi.get_fs_and_files(
+                    here_start, here_end, sector=sector, chans=chans)[1]
+            here_ms = satpy.MultiScene.from_files(
+                    [str(x) for x in here_glm_files] +
+                    [str(x) for x in here_abi_files],
+                    reader=["abi_l1b", "glm_l2"],
+                    scene_kwargs={
+                        "reader_kwargs": {
+                            "abi_l1b": {"file_system": abi_fs},
+                            "glm_l2": {"file_system": lfs}}},
+                        group_keys=["start_time"],
+                        time_threshold=35)
+            here_ms.load([f"C{c:>02d}" for c in chans])
+            yield here_ms
+    else:
+        (lfs, glm_files, abi_fs, abi_files, scene_kwargs) = \
+            prepare_abi_glm_ms_args(start_date, end_date, chans, sector=sector)
+        ms = satpy.MultiScene.from_files(
+            [str(x) for x in glm_files] +
+            [str(x) for x in abi_files],
+            reader=["abi_l1b", "glm_l2"],
+            scene_kwargs={
+                "reader_kwargs": {
+                    "abi_l1b": {"file_system": abi_fs},
+                    "glm_l2": {"file_system": lfs}}},
+                group_keys=["start_time"],
+                time_threshold=35)
+        ms.load([f"C{c:>02d}" for c in chans])
+        yield ms

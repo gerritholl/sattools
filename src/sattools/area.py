@@ -9,6 +9,8 @@ def join_areadefs(*areas):
     create the smallest area definition that encompasses all.
     """
 
+    # also at https://github.com/pytroll/pyresample/pull/306
+
     first = None
     if len(areas) == 0:
         raise TypeError("Must pass at least one area, found zero.")
@@ -43,3 +45,10 @@ def flatten_areas(areas):
             yield from flatten_areas(ar.defs)
         else:
             yield ar
+
+
+def centre(area):
+    """Get lat/lon of centre of area.
+    """
+
+    return area.get_lonlat(area.height//2, area.width//2)

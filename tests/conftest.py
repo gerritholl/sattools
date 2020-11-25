@@ -73,7 +73,7 @@ def fake_multiscene():
 
 @pytest.fixture
 def fake_multiscene2():
-    """Like fake_multiscene1, but with real areas (one stacked).
+    """Like fake_multiscene, but with real areas (one stacked).
     """
     from satpy.dataset.dataid import WavelengthRange
     from satpy.tests.utils import make_dataid
@@ -101,6 +101,7 @@ def fake_multiscene2():
     return satpy.MultiScene([sc1, sc2, sc3])
 
 
+
 @pytest.fixture
 def fake_multiscene_empty():
     """Fake multiscene with empty scenes.
@@ -118,6 +119,41 @@ def fake_multiscene3(fake_multiscene2):
         fms.scenes[2][k].attrs["area"] = fake_multiscene2.scenes[0][k].\
                 attrs["area"]
     return fms
+
+
+@pytest.fixture
+def fake_multiscene4():
+    """Like fake_multiscene2, but with varying areas (none stacked).
+    """
+    from satpy.dataset.dataid import WavelengthRange
+    from satpy.tests.utils import make_dataid
+    common_attrs = {}
+    wl = {"C08": WavelengthRange(5.7, 6.2, 6.7),
+          "C10": WavelengthRange(6.8, 7.3, 7.8),
+          "C14": WavelengthRange(10, 11, 12)}
+    content = {make_dataid(name=x, wavelength=wl.get(x)):
+               numpy.arange(5*5).reshape(5, 5)
+               for x in ("C08", "C10", "C14")}
+    areas = [pyresample.create_area_def(
+             "test-area",
+             {"proj": "eqc", "lat_ts": 0, "lat_0": 0, "lon_0": 0,
+              "x_0": 0, "y_0": 0, "ellps": "sphere", "units": "m",
+              "no_defs": None, "type": "crs"},
+             units="m",
+             shape=(5, 5),
+             resolution=1000,
+             center=(10*i, 20*i)) for i in range(3)]
+
+    aids = [0, 0, 0, 0, 0, 0, 1, 1, 1, 2]
+    scenes = [satpy.tests.utils.make_fake_scene(
+        content.copy(),
+        common_attrs=common_attrs,
+        area=areas[i]) for i in aids]
+    for (i, sc) in enumerate(scenes):
+        for da in sc.values():
+            da.attrs["start_time"] = datetime.datetime(1900, 1, 1, 0, i)
+            da.attrs["end_time"] = datetime.datetime(1900, 1, 1, 0, i+1)
+    return satpy.MultiScene(scenes)
 
 
 # @pytest.fixture
