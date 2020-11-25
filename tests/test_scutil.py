@@ -150,3 +150,9 @@ def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
                     datetime.datetime(1900, 1, 1, 1, 0),
                     chans=[8, 10],
                     sector="full"))
+        assert list(get_abi_glm_multiscenes(
+                datetime.datetime(1900, 1, 1, 0, 0),
+                datetime.datetime(1900, 1, 1, 1, 0),
+                chans=[8, 10],
+                sector="M1",
+                limit=0)) == []

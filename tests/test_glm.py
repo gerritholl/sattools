@@ -16,6 +16,8 @@ def test_get_basedir(tmp_path, monkeypatch):
         d = get_dwd_glm_basedir(m)
         assert d == pathlib.Path(tmp_path / "nas" / "GLM" /
                                  f"GLM{m:s}" / "1min")
+    with pytest.raises(ValueError):
+        d = get_dwd_glm_basedir("invalid")
 
 
 def test_get_pattern(tmp_path, monkeypatch):
@@ -117,7 +119,7 @@ def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
                       sector="C")
                  for m in (2, 4)])
 
-        def fake_run(files, max_files, sector="C"):
+        def fake_run(files, max_files, sector="C", lat=None, lon=None):
             """Create files when testing."""
             _mk_test_files(get_pattern_dwd_glm(sector), (0, 1, 2, 3, 4, 5, 6))
         sgr.side_effect = fake_run
@@ -133,6 +135,14 @@ def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
                 "OR_GLM-L2-GLMC-M3_G16_s1900001000000*_e1900001000100*_c*.nc")
         assert fi.times == [datetime.datetime(1900, 1, 1, 0, 0),
                             datetime.datetime(1900, 1, 1, 0, 1)]
+
+        g = ensure_glm_for_period(
+                datetime.datetime(1900, 1, 1, 0, 0, 0),
+                datetime.datetime(1900, 1, 1, 0, 6, 0),
+                sector="M1",
+                lat=10,
+                lon=20)
+        fi = next(g)
 
 
 def test_find_coverage(glm_files, tmp_path, monkeypatch):
@@ -262,3 +272,10 @@ def test_run_glmtools(tmp_path, caplog, monkeypatch):
         run_glmtools([tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
                      max_files=1)
         assert mocks[0].call_count == 2
+
+
+@patch("importlib.util.spec_from_file_location", autospec=True)
+@patch("importlib.util.module_from_spec", autospec=True)
+def test_load_file(ium, ius):
+    from sattools.glm import load_file
+    load_file("module", "/dev/null")

@@ -173,19 +173,3 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
                 "one-to-one match between GLM-files and ABI-files, and GLM "
                 "processing remains hardcoded for 1-minute. "
                 "See https://github.com/gerritholl/sattools/issues/34")
-        (lfs, glm_files, abi_fs, abi_files, scene_kwargs) = \
-            prepare_abi_glm_ms_args(start_date, end_date, chans, sector=sector)
-        ms = satpy.MultiScene.from_files(
-            [str(x) for x in glm_files] +
-            [str(x) for x in abi_files],
-            reader=["abi_l1b", "glm_l2"],
-            scene_kwargs={
-                "reader_kwargs": {
-                    "abi_l1b": {"file_system": abi_fs},
-                    "glm_l2": {"file_system": lfs}}},
-                group_keys=["start_time"],
-                time_threshold=35)
-        with log.RaiseOnWarnContext(logging.getLogger("satpy")):
-            ms.load([f"C{c:>02d}" for c in chans])
-            ms.scenes
-        yield ms
