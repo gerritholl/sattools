@@ -136,7 +136,9 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
                         "abi_l1b": {"file_system": abi_fs}}},
                 group_keys=["start_time"],
                 time_threshold=30)
-        ms.load([f"C{chans[0]:>02d}"])
+        with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+            ms.load([f"C{chans[0]:>02d}"])
+            ms.scenes
         for (cnt, split) in enumerate(abi.split_meso(ms)):
             if limit is not None and cnt >= limit:
                 break
@@ -160,7 +162,9 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
                             "glm_l2": {"file_system": lfs}}},
                         group_keys=["start_time"],
                         time_threshold=35)
-            here_ms.load([f"C{c:>02d}" for c in chans] + from_glm)
+            with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+                here_ms.load([f"C{c:>02d}" for c in chans] + from_glm)
+                here_ms.scenes
             yield here_ms
     else:
         raise NotImplementedError(
@@ -181,5 +185,7 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
                     "glm_l2": {"file_system": lfs}}},
                 group_keys=["start_time"],
                 time_threshold=35)
-        ms.load([f"C{c:>02d}" for c in chans])
+        with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+            ms.load([f"C{c:>02d}" for c in chans])
+            ms.scenes
         yield ms
