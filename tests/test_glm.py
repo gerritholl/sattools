@@ -41,8 +41,8 @@ def test_get_pattern(tmp_path, monkeypatch):
         # filenames always show M1 as the sector
         p = get_pattern_dwd_glm(f"M{i:d}", lat=45, lon=-55.3)
         assert p == str(pathlib.Path(
-            tmp_path / "nas" / "GLM-processed" / f"M{i:d}" / "45.0_-55.3" / "1min" /
-            "{year}/{month}/{day}/{hour}/"
+            tmp_path / "nas" / "GLM-processed" / f"M{i:d}" / "45.0_-55.3" /
+            "1min" / "{year}/{month}/{day}/{hour}/"
             "OR_GLM-L2-GLMM1-M3_G16_"
             "s{year}{doy}{hour}{minute}{second}*_"
             "e{end_year}{end_doy}{end_hour}{end_minute}{end_second}*_c*.nc"))
@@ -125,7 +125,8 @@ def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
 
         def fake_run(files, max_files, sector="C", lat=None, lon=None):
             """Create files when testing."""
-            _mk_test_files(get_pattern_dwd_glm(sector, lat=lat, lon=lon), (0, 1, 2, 3, 4, 5, 6))
+            _mk_test_files(get_pattern_dwd_glm(sector, lat=lat, lon=lon),
+                           (0, 1, 2, 3, 4, 5, 6))
         sgr.side_effect = fake_run
         g = ensure_glm_for_period(
                 datetime.datetime(1900, 1, 1, 0, 0, 0),

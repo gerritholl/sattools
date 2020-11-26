@@ -87,7 +87,8 @@ def ensure_glm_for_period(
             "Locating GLM gaps between "
             f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}, "
             f"sector {sector:s}")
-    for gap in find_glm_coverage_gaps(start_date, end_date, sector=sector, lat=lat, lon=lon):
+    for gap in find_glm_coverage_gaps(start_date, end_date, sector=sector,
+                                      lat=lat, lon=lon):
         logger.debug(
                 "Found gap between "
                 f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
@@ -127,11 +128,13 @@ def find_glm_coverage(start_date, end_date, sector="C", lat=None, lon=None):
                 pandas.Timestamp(file_info.times[1]))
 
 
-def find_glm_coverage_gaps(start_date, end_date, sector="C", lat=None, lon=None):
+def find_glm_coverage_gaps(start_date, end_date, sector="C",
+                           lat=None, lon=None):
     """Yield intervals not covered by GLMC in period.
     """
     last = pandas.Timestamp(start_date)
-    for iv in find_glm_coverage(start_date, end_date, sector=sector, lat=lat, lon=lon):
+    for iv in find_glm_coverage(start_date, end_date, sector=sector,
+                                lat=lat, lon=lon):
         if iv.left > last:
             yield pandas.Interval(last, iv.left)
         last = iv.right
