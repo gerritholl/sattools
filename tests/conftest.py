@@ -214,10 +214,10 @@ def glm_files(monkeypatch, tmp_path):
             get_pattern_dwd_glm("F"),
             (0, 2, 5))
     glmm1 = _mk_test_files(
-            get_pattern_dwd_glm("M1"),
+            get_pattern_dwd_glm("M1", lat=1.2, lon=2.3),
             (0, 5, 8))
     glmm2 = _mk_test_files(
-            get_pattern_dwd_glm("M2"),
+            get_pattern_dwd_glm("M2", lat=1.2, lon=2.3),
             (0, 2, 4))
     return glmc + glmf + glmm1 + glmm2
 

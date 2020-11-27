@@ -20,16 +20,20 @@ glm_script = "/home/gholl/checkouts/glmtools/examples/grid/make_GLM_grids.py"
 logger = logging.getLogger(__name__)
 
 
-def get_dwd_glm_basedir(sector="C"):
+def get_dwd_glm_basedir(sector="C", lat=None, lon=None, period="1min"):
     base = os.environ["NAS_DATA"]
     if sector not in ("C", "F", "M1", "M2"):
         raise ValueError(f"Invalid sector: {sector!s}. "
                          "Expected 'C', 'F', 'M1', or 'M2'.")
-    return pathlib.Path(base) / "GLM" / f"GLM{sector:s}" / "1min"
+    bd = pathlib.Path(base) / "GLM-processed"
+    bd /= sector
+    if sector.startswith("M"):
+        bd /= f"{lat:.1f}_{lon:.1f}"
+    return bd / period
 
 
-def get_pattern_dwd_glm(sector="C"):
-    bd = get_dwd_glm_basedir(sector=sector)
+def get_pattern_dwd_glm(sector="C", lat=None, lon=None, period="1min"):
+    bd = get_dwd_glm_basedir(sector=sector, lat=lat, lon=lon, period=period)
     seclab = sector if sector in ("C", "F", "M1") else "M1"
     return str(bd /
                "{year}/{month}/{day}/{hour}/"
@@ -83,7 +87,8 @@ def ensure_glm_for_period(
             "Locating GLM gaps between "
             f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}, "
             f"sector {sector:s}")
-    for gap in find_glm_coverage_gaps(start_date, end_date, sector=sector):
+    for gap in find_glm_coverage_gaps(start_date, end_date, sector=sector,
+                                      lat=lat, lon=lon):
         logger.debug(
                 "Found gap between "
                 f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
@@ -96,30 +101,40 @@ def ensure_glm_for_period(
             logger.debug(f"GLM {sector:s} should now be fully covered")
     # there should be no more gaps now!
     for gap in find_glm_coverage_gaps(
-            start_date, end_date, sector=sector):
+            start_date, end_date, sector=sector, lat=lat, lon=lon):
         raise RuntimeError(
                 f"I have tried to ensure GLM {sector:s} by running glmtools, "
                 "but data still appear to be missing for "
                 f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S} :( ")
-    glm = FileSet(path=get_pattern_dwd_glm(sector), name="glm")
+    if sector in "CF":
+        pat = get_pattern_dwd_glm(sector)
+    else:
+        pat = get_pattern_dwd_glm(sector, lat=lat, lon=lon)
+    glm = FileSet(path=pat, name="glm")
     yield from glm.find(start_date, end_date, no_files_error=True)
 
 
-def find_glm_coverage(start_date, end_date, sector="C"):
+def find_glm_coverage(start_date, end_date, sector="C", lat=None, lon=None):
     """Yield intervals corresponding to GLMC coverage.
     """
-    glm = FileSet(path=get_pattern_dwd_glm(sector=sector), name="glm")
+    if sector in "CF":
+        pat = get_pattern_dwd_glm(sector)
+    else:
+        pat = get_pattern_dwd_glm(sector, lat=lat, lon=lon)
+    glm = FileSet(path=pat, name="glm")
     for file_info in glm.find(start_date, end_date, no_files_error=False):
         yield pandas.Interval(
                 pandas.Timestamp(file_info.times[0]),
                 pandas.Timestamp(file_info.times[1]))
 
 
-def find_glm_coverage_gaps(start_date, end_date, sector="C"):
+def find_glm_coverage_gaps(start_date, end_date, sector="C",
+                           lat=None, lon=None):
     """Yield intervals not covered by GLMC in period.
     """
     last = pandas.Timestamp(start_date)
-    for iv in find_glm_coverage(start_date, end_date, sector=sector):
+    for iv in find_glm_coverage(start_date, end_date, sector=sector,
+                                lat=lat, lon=lon):
         if iv.left > last:
             yield pandas.Interval(last, iv.left)
         last = iv.right
@@ -163,8 +178,11 @@ def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
         if glm_names[sector] == "meso":
             arg_list.extend(["--ctr_lat", f"{lat:.2f}", "--ctr_lon",
                              f"{lon:.2f}"])
+            outdir = get_dwd_glm_basedir(sector=sector, lat=lat, lon=lon)
+        else:
+            outdir = get_dwd_glm_basedir(sector=sector)
         arg_list.extend([
-            "-o", str(get_dwd_glm_basedir(sector=sector)) +
+            "-o", str(outdir) +
             "/{start_time:%Y/%m/%d/%H}/{dataset_name}",
             *(str(f) for f in these_files)])
         args = parser.parse_args(arg_list)
