@@ -54,25 +54,22 @@ def test_get_resampled_multiscene(
 
 
 @unittest.mock.patch("sattools.glm.ensure_glm_for_period", autospec=True)
-@unittest.mock.patch("sattools.abi.get_fs_and_files", autospec=True)
+@unittest.mock.patch("sattools.abi.get_fsfiles", autospec=True)
 def test_prepare_args(sag, sge, tmp_path):
     from sattools.scutil import prepare_abi_glm_ms_args
     from fsspec.implementations.local import LocalFileSystem
     from typhon.files.handlers.common import FileInfo
+    from satpy.readers import FSFile
     sge.return_value = [
             FileInfo(path=str(tmp_path / f"glm{i:d}"),
                      times=[datetime.datetime(1900, 1, 1, 0, i),
                             datetime.datetime(1900, 1, 1, 0, i+1)],
                      attr={})
             for i in range(5)]
-    sag.return_value = (
-            LocalFileSystem(),
-            [FileInfo(path=str(tmp_path / f"abi{i:d}"),
-                      times=[datetime.datetime(1900, 1, 1, 0, i),
-                             datetime.datetime(1900, 1, 1, 0, i+1)],
-                      attr={})
-             for i in range(5)])
-    (gfs, gf, afs, af, kw) = prepare_abi_glm_ms_args(
+    sag.return_value = [
+            FSFile(tmp_path / f"abi{i:d}", LocalFileSystem())
+             for i in range(5)]
+    (gfsfs, afsfs) = prepare_abi_glm_ms_args(
             datetime.datetime(1900, 1, 1, 0),
             datetime.datetime(1900, 1, 1, 6),
             chans={8, 10},
@@ -88,12 +85,13 @@ def test_prepare_args(sag, sge, tmp_path):
 
 
 @unittest.mock.patch("sattools.glm.ensure_glm_for_period", autospec=True)
-@unittest.mock.patch("sattools.abi.get_fs_and_files", autospec=True)
+@unittest.mock.patch("sattools.abi.get_fsfiles", autospec=True)
 def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
     from sattools.scutil import get_abi_glm_multiscenes
     from sattools.abi import split_meso
     from fsspec.implementations.local import LocalFileSystem
     from typhon.files.handlers.common import FileInfo
+    from satpy.readers import FSFile
 
     sge.return_value = [
             FileInfo(path=str(tmp_path / f"glm{i:d}"),
@@ -101,13 +99,10 @@ def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
                             datetime.datetime(1900, 1, 1, 0, i+1)],
                      attr={})
             for i in range(5)]
-    sag.return_value = (
-            LocalFileSystem(),
-            [FileInfo(path=str(tmp_path / f"abi{i:d}"),
-                      times=[datetime.datetime(1900, 1, 1, 0, i),
-                             datetime.datetime(1900, 1, 1, 0, i+1)],
-                      attr={})
-             for i in range(5)])
+    sag.return_value = [
+            FSFile(tmp_path / f"abi{i:d}",
+                   LocalFileSystem())
+             for i in range(5)]
 
     others = list(split_meso(fake_multiscene4))
 

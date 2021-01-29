@@ -3,54 +3,45 @@ import logging
 import pytest
 from unittest.mock import patch, MagicMock
 
+fake_areas = ["""
+new-england-2000:
+  description: New England, 2000 metre
+  projection:
+    proj: eqc
+    ellps: WGS84
+    units: m
+  shape:
+    width: 897
+    height: 585
+  area_extent:
+    lower_left_xy: [-9163411, 4255208]
+    upper_right_xy: [-7369792, 5424479]""",
+"""new-england-3000:
+  description: New England, 3000 metre
+  projection:
+    proj: eqc
+    ellps: WGS84
+    units: m
+  shape:
+    width: 598
+    height: 390
+  area_extent:
+    lower_left_xy: [-9163411, 4255208]
+    upper_right_xy: [-7369792, 5424479]
+"""]
 
-def test_get_areas(caplog):
-    # need to mock pkg_resources.resource_filename
-    # and pyresample.area_config.load_area
-    # such that I get a list of areas
+def test_get_areas(caplog, tmp_path):
+
+    import satpy
     import pyresample.geometry
     import sattools.ptc
-    ad = pyresample.geometry.AreaDefinition(
-            "shrubbery", "it is a good shrubbery", "shrub",
-            {'ellps': 'WGS84', 'lat_0': '0', 'lat_ts': '0', 'lon_0': '0',
-             'no_defs': 'None', 'proj': 'eqc', 'type': 'crs', 'units': 'm',
-             'x_0': 0, 'y_0': 0},
-            750, 300, (2500000, 4000000, 3000000, 40000000))
-    with patch("pkg_resources.resource_filename", autospec=True) as prf:
-        prf.return_value = "/dev/null"
-        with patch("pyresample.area_config.load_area", autospec=True) as pal:
-            pal.return_value = [ad]
-            D = sattools.ptc.get_all_areas(["tofu", "tempeh"])
-            assert prf.call_count == 2
-            assert pal.call_count == 2
-            assert D == {"shrubbery": ad}
-        prf.return_value = "/file/not/found"
-        with pytest.raises(FileNotFoundError):
-            sattools.ptc.get_all_areas(["oranges"])
-    with pytest.raises(ModuleNotFoundError):
-        sattools.ptc.get_all_areas(["lemons"])
-    with pytest.raises(ModuleNotFoundError):
-        sattools.ptc.get_all_areas(["lemons"], missing_ok=False)
-    with caplog.at_level(logging.ERROR):
-        D = sattools.ptc.get_all_areas(["lemons"], missing_ok=True)
-        assert "Cannot collect areas for lemons" in caplog.text
-    assert D == {}
+    for (nm, ar) in zip("ab", fake_areas):
+        (tmp_path / nm / "etc").mkdir(parents=True)
+        with (tmp_path / nm / "etc" / "areas.yaml").open(mode="wt") as fp:
+            fp.write(ar)
 
-
-def test_add_pkg():
-    import sattools.ptc
-    scn = MagicMock()
-    with patch("satpy.composites.config_loader.CompositorLoader",
-               autospec=True) as sccC, \
-            patch("pkg_resources.resource_filename", autospec=True) as prf:
-        prf.return_value = "/dev/null"
-        sccC.return_value.load_compositors.return_value = ({}, {})
-        sattools.ptc.add_pkg_comps_mods(scn, "apple", ["tomato"])
-
-
-def test_add_pkgs():
-    import sattools.ptc
-    scn = MagicMock()
-    with patch("sattools.ptc.add_pkg_comps_mods", autospec=True):
-        sattools.ptc.add_all_pkg_comps_mods(
-                scn, ["apple", "strawberry"], ["tomato"])
+    with satpy.config.set(config_path=[tmp_path / "a", tmp_path / "b"]):
+        D = sattools.ptc.get_all_areas()
+    assert "new-england-2000" in D  # first
+    assert "new-england-3000" in D  # second
+    assert "germ" in D  # builtin

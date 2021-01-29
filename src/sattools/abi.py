@@ -10,12 +10,14 @@ import satpy
 from typhon.files.fileset import FileSet
 
 
-def get_fs_and_files(start_date, end_date, sector="F", chans=14):
-    """Return filesystem object and files for ABI for period.
+def get_fsfiles(start_date, end_date, sector="F", chans=14):
+    """Return FSFile objects for GOES ABI for period.
 
     Sector can be "C", "F", "M1", or "M2".
 
     Chans is a channel number or an array of channel numbers.
+
+    Returns a list of FSFile instances.
     """
 
     cachedir = appdirs.user_cache_dir("ABI-block-cache")
@@ -46,7 +48,7 @@ def get_fs_and_files(start_date, end_date, sector="F", chans=14):
     files = list(
             fi for fi in abi_fileset.find(start_date, end_date)
             if any(f"C{c:>02d}_" in fi.path for c in chans))
-    return (fs_block, files)
+    return [satpy.readers.FSFile(f, fs_block) for f in files]
 
 
 def split_meso(ms):
