@@ -18,7 +18,7 @@ def get_all_areas():
     """
 
     core = pkg_resources.resource_filename("satpy", "etc/areas.yaml")
-    others = [os.path.join(x, "etc", "areas.yaml") for x in
+    others = [os.path.join(x, "areas.yaml") for x in
               satpy.config["config_path"]]
     D = {}
     for fn in [core] + others:
