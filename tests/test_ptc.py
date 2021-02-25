@@ -1,9 +1,7 @@
-import logging
+"""Tests related to pytroll interaction."""
 
-import pytest
-from unittest.mock import patch, MagicMock
-
-fake_areas = ["""
+fake_areas = [
+        """
 new-england-2000:
   description: New England, 2000 metre
   projection:
@@ -16,7 +14,7 @@ new-england-2000:
   area_extent:
     lower_left_xy: [-9163411, 4255208]
     upper_right_xy: [-7369792, 5424479]""",
-"""new-england-3000:
+        """new-england-3000:
   description: New England, 3000 metre
   projection:
     proj: eqc
@@ -30,10 +28,10 @@ new-england-2000:
     upper_right_xy: [-7369792, 5424479]
 """]
 
-def test_get_areas(caplog, tmp_path):
 
+def test_get_areas(caplog, tmp_path):
+    """Test getting all areas."""
     import satpy
-    import pyresample.geometry
     import sattools.ptc
     for (nm, ar) in zip("ab", fake_areas):
         (tmp_path / nm / "etc").mkdir(parents=True)

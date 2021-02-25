@@ -1,3 +1,4 @@
+"""Test functionality related to glm module."""
 import pathlib
 import datetime
 import logging
@@ -10,6 +11,7 @@ from conftest import _mk_test_files
 
 
 def test_get_basedir(tmp_path, monkeypatch):
+    """Test getting the GLM basedir."""
     from sattools.glm import get_dwd_glm_basedir
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     for m in ("C", "F"):
@@ -25,6 +27,7 @@ def test_get_basedir(tmp_path, monkeypatch):
 
 
 def test_get_pattern(tmp_path, monkeypatch):
+    """Test getting GLM pattern."""
     from sattools.glm import get_pattern_dwd_glm
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     for m in "CF":
@@ -52,6 +55,7 @@ def test_get_pattern(tmp_path, monkeypatch):
 @patch("s3fs.S3FileSystem")
 def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog,
                          monkeypatch):
+    """Test ensuring GLM LCFA is created."""
     from sattools.glm import ensure_glm_lcfa_for_period
     from fsspec.implementations.local import LocalFileSystem
     from typhon.files.fileset import NoFilesError
@@ -103,6 +107,7 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog,
 @patch("s3fs.S3FileSystem")
 def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
                     lcfa_files, tmp_path, monkeypatch):
+    "Test ensuring GLM GLMC is calculated."""
     from sattools.glm import ensure_glm_for_period
     from sattools.glm import get_pattern_dwd_glm
     from fsspec.implementations.local import LocalFileSystem
@@ -155,6 +160,7 @@ def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
 
 
 def test_find_coverage(glm_files, tmp_path, monkeypatch):
+    """Test finding GLM time coverage."""
     from sattools.glm import find_glm_coverage
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     covered = list(find_glm_coverage(
@@ -201,6 +207,7 @@ def test_find_coverage(glm_files, tmp_path, monkeypatch):
 
 
 def test_find_gaps(glm_files, monkeypatch, tmp_path):
+    """Test finding GLM time coverage gaps."""
     from sattools.glm import find_glm_coverage_gaps
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     pI = pandas.Interval
@@ -251,6 +258,7 @@ def test_find_gaps(glm_files, monkeypatch, tmp_path):
 
 
 def test_run_glmtools(tmp_path, caplog, monkeypatch):
+    """Test running glmtools".
     from sattools.glm import run_glmtools
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     with patch("sattools.glm.load_file") as sgl:
@@ -286,5 +294,6 @@ def test_run_glmtools(tmp_path, caplog, monkeypatch):
 @patch("importlib.util.spec_from_file_location", autospec=True)
 @patch("importlib.util.module_from_spec", autospec=True)
 def test_load_file(ium, ius):
+    """Test loading file as module."""
     from sattools.glm import load_file
     load_file("module", "/dev/null")

@@ -11,6 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class WarningLoggedError(Exception):
+    """Special exception to raise when a warning message is logged.
+
+    Satpy has the tendency to log warnings when things are wrong, I'd like to
+    raise an exception when this happens.
+    """
+
     pass
 
 
@@ -49,13 +55,21 @@ def setup_main_handler(
 # this class is based on
 # https://docs.python.org/3.10/howto/logging-cookbook.html#using-a-context-manager-for-selective-logging  # noqa: E501
 class LoggingContext:
+    """Context manager to temporarily log differently."""
+
     def __init__(self, logger, level=None, handler=None, close=True):
+        """Initiate logging context manager.
+
+        Pass the logger, log level, handler, and whether it should be closed at
+        the end or not.
+        """
         self.logger = logger
         self.level = level
         self.handler = handler
         self.close = close
 
     def __enter__(self):
+        """Enter the context manager."""
         if self.level is not None:
             self.old_level = self.logger.level
             self.logger.setLevel(self.level)
@@ -63,6 +77,7 @@ class LoggingContext:
             self.logger.addHandler(self.handler)
 
     def __exit__(self, et, ev, tb):
+        """Exit the context manager."""
         if self.level is not None:
             self.logger.setLevel(self.old_level)
         if self.handler:

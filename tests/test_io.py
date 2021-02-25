@@ -1,9 +1,11 @@
+"""Test I/O related functionality."""
 import tempfile
 import os
 import pathlib
 
 
 def test_cache_dir():
+    """Test getting cache directory."""
     from sattools.io import get_cache_dir
     with tempfile.TemporaryDirectory() as tmpdir:
         d = get_cache_dir(tmpdir, "tofu")
@@ -39,6 +41,7 @@ def test_cache_dir():
 
 
 def test_plotdir(tmp_path, monkeypatch):
+    """Test getting plotting directory."""
     from sattools.io import plotdir
     monkeypatch.delenv("PLOT_BASEDIR", raising=False)
     pd = plotdir(create=False)
@@ -55,6 +58,7 @@ def test_plotdir(tmp_path, monkeypatch):
 
 
 def test_datadir(tmp_path, monkeypatch):
+    """Test getting NAS data directory."""
     from sattools.io import nas_data_out
     monkeypatch.delenv("NAS_DATA", raising=False)
     pd = nas_data_out(create=False)

@@ -19,7 +19,6 @@ def get_fsfiles(start_date, end_date, sector="F", chans=14):
 
     Returns a list of FSFile instances.
     """
-
     cachedir = appdirs.user_cache_dir("ABI-block-cache")
 
     if not isinstance(chans, collections.abc.Iterable):
@@ -59,7 +58,6 @@ def split_meso(ms):
 
     Assumes this happens at the same scene for all channels.
     """
-
     # NB: https://github.com/pytroll/satpy/issues/1419
     ch = next(iter(ms.first_scene.keys()))
     ref = ms.first_scene[ch].attrs["area"]

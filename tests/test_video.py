@@ -1,11 +1,11 @@
-"""Test the showsat script
-"""
+"""Test the showsat script."""
 
 import unittest.mock
 
 
 @unittest.mock.patch("argparse.ArgumentParser", autospec=True)
 def test_get_parser(ap):
+    """Test argument parser."""
     import sattools.processing.video
     sattools.processing.video.parse_cmdline()
     assert ap.return_value.add_argument.call_count == 5
@@ -14,6 +14,7 @@ def test_get_parser(ap):
 @unittest.mock.patch("satpy.MultiScene.from_files", autospec=True)
 @unittest.mock.patch("sattools.processing.video.parse_cmdline", autospec=True)
 def test_main(fpvp, sMf, fake_multiscene2, fake_multiscene3, tmp_path):
+    """Test main function."""
     import sattools.processing.video
     fpvp.return_value = sattools.processing.video.\
         get_parser().parse_args([

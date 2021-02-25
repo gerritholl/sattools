@@ -1,5 +1,4 @@
-"""Test visualisation routines
-"""
+"""Test visualisation routines."""
 
 import datetime
 
@@ -10,6 +9,7 @@ import pyresample
 
 
 def test_show(fakescene, fakearea, tmp_path):
+    """Test showing a scene and area."""
     import sattools.vis
     from satpy import Scene
     comps = ["raspberry", "blueberry"]
@@ -62,6 +62,7 @@ def test_show(fakescene, fakearea, tmp_path):
 
 @patch("satpy.MultiScene.from_files", autospec=True)
 def test_show_video(sMf, fake_multiscene2, fake_multiscene3, tmp_path):
+    """Test showing an ABI/GLM video from files."""
     from sattools.vis import show_video_abi_glm
     sMf.return_value = fake_multiscene2
     mm = MagicMock()
@@ -81,6 +82,7 @@ def test_show_video(sMf, fake_multiscene2, fake_multiscene3, tmp_path):
 
 
 def test_flatten_areas():
+    """Test flattening a stacked area definition."""
     from sattools.area import flatten_areas
     ars = [pyresample.create_area_def(
             "test-area",
@@ -107,6 +109,7 @@ def test_flatten_areas():
 def test_show_video_from_times(
         svs, smS, sr, sS, monkeypatch, tmp_path,
         better_glmc_pattern, more_glmc_files, fakearea):
+    """Test showing an ABI/GLM video from times."""
     from sattools.vis import show_video_abi_glm_times
     from fsspec.implementations.local import LocalFileSystem
     from fsspec.implementations.cached import CachingFileSystem

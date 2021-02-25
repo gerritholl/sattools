@@ -154,6 +154,10 @@ def load_file(name, path):
 
 
 def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
+    """Run glmtools.
+
+    This function runs glmtools.
+    """
     # how to call this?  should not be needed as a subprocess, although maybe
     # advantageous to keep things separate, can I at least determine the
     # location for make_GLM_grids in a more portable manner?

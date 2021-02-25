@@ -1,12 +1,11 @@
-"""Various IO-related tools
-"""
+"""Various IO-related tools."""
 import os
 import pathlib
 import datetime
 
 
 def get_cache_dir(base=None, subdir=""):
-    """Get directory to use for caching
+    """Get directory to use for caching.
 
     Get (and create, if necessary) directory to use for caching.
 
@@ -29,6 +28,7 @@ def get_cache_dir(base=None, subdir=""):
 
 
 def plotdir(basedir=None, create=False):
+    """Get directory where plots should go."""
     pd = (pathlib.Path(
             (basedir or
              os.environ.get("PLOT_BASEDIR") or
@@ -40,8 +40,7 @@ def plotdir(basedir=None, create=False):
 
 
 def nas_data_out(nas_store=None, subdir="data_out", create=False):
-    """Get base directory for data to store on NAS.
-    """
+    """Get base directory for data to store on NAS."""
     pd = pathlib.Path(
         nas_store or
         os.environ.get("NAS_DATA") or

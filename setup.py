@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-    Setup file for sattools.
-    Use setup.cfg to configure your project.
+"""Setup file for sattools.
 
-    This file was generated with PyScaffold 3.2.3.
-    PyScaffold helps you to put up the scaffold of your new Python project.
-    Learn more under: https://pyscaffold.org/
+This file was generated with PyScaffold 3.2.3.
+PyScaffold helps you to put up the scaffold of your new Python project.
+Learn more under: https://pyscaffold.org/
 """
+
 import sys
 
 from pkg_resources import VersionConflict, require

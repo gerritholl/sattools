@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-    Dummy conftest.py for sattools.
-
-    If you don't know what this is for, just leave it empty.
-    Read more about conftest.py under:
-    https://pytest.org/latest/plugins.html
-"""
+"""conftest.py for sattools."""
 
 import datetime
 import copy
@@ -21,6 +15,7 @@ import pyresample
 
 @pytest.fixture(autouse=True)
 def setUp(tmp_path, monkeypatch):
+    """Set up environment variables for all tests."""
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "scratch"))
 
 
@@ -55,6 +50,7 @@ def fakescene(fakearea):
 
 @pytest.fixture
 def fake_multiscene():
+    """Get a fake satpy MultiScene."""
     sc1 = satpy.tests.utils.make_fake_scene(
             {"rasberry": numpy.arange(5*5).reshape(5, 5),
              "straberry": numpy.arange(5*5).reshape(5, 5)})
@@ -73,8 +69,7 @@ def fake_multiscene():
 
 @pytest.fixture
 def fake_multiscene2():
-    """Like fake_multiscene, but with real areas (one stacked).
-    """
+    """Like fake_multiscene, but with real areas (one stacked)."""
     from satpy.dataset.dataid import WavelengthRange
     from satpy.tests.utils import make_dataid
     common_attrs = {
@@ -103,16 +98,13 @@ def fake_multiscene2():
 
 @pytest.fixture
 def fake_multiscene_empty():
-    """Fake multiscene with empty scenes.
-    """
-
+    """Fake multiscene with empty scenes."""
     return satpy.MultiScene([satpy.Scene() for _ in range(3)])
 
 
 @pytest.fixture
 def fake_multiscene3(fake_multiscene2):
-    """Like fake_multiscene2, but with real areas (none stacked).
-    """
+    """Like fake_multiscene2, but with real areas (none stacked)."""
     fms = satpy.MultiScene(copy.deepcopy(fake_multiscene2.scenes))
     for k in fms.scenes[2].keys():
         fms.scenes[2][k].attrs["area"] = fake_multiscene2.scenes[0][k].\
@@ -122,8 +114,7 @@ def fake_multiscene3(fake_multiscene2):
 
 @pytest.fixture
 def fake_multiscene4():
-    """Like fake_multiscene2, but with varying areas (none stacked).
-    """
+    """Like fake_multiscene2, but with varying areas (none stacked)."""
     from satpy.dataset.dataid import WavelengthRange
     from satpy.tests.utils import make_dataid
     common_attrs = {}
@@ -168,8 +159,7 @@ def fake_multiscene4():
 
 @pytest.fixture
 def better_glmc_pattern(tmp_path):
-    """Return a GLMC pattern suitable for creation not just finding.
-    """
+    """Return a GLMC pattern suitable for creation not just finding."""
     # typhon fileset doesn't understand the full format-specification
     # mini-language, so something like hour:>02d doesn't work...
     return str(tmp_path / "nas" / "GLM" / "GLMC" / "1min" / "{year}"
@@ -181,12 +171,14 @@ def better_glmc_pattern(tmp_path):
 
 @pytest.fixture
 def lcfa_pattern(tmp_path):
+    """Fixture to mock pattern for LCFA files."""
     return str(tmp_path / "lcfa-fake" /
                "lcfa-fake-{year}{month}{day}{hour}{minute}{second}-"
                "{end_hour}{end_minute}{end_second}.nc")
 
 
 def _mk_test_files(pattern, minutes):
+    """Create test files in temporary directory."""
     pat = pathlib.Path(pattern)
     files = []
     for m in minutes:
@@ -205,6 +197,7 @@ def _mk_test_files(pattern, minutes):
 
 @pytest.fixture
 def glm_files(monkeypatch, tmp_path):
+    """Create GLM files and return the created ones."""
     from sattools.glm import get_pattern_dwd_glm
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     glmc = _mk_test_files(
@@ -224,9 +217,14 @@ def glm_files(monkeypatch, tmp_path):
 
 @pytest.fixture
 def lcfa_files(lcfa_pattern):
+    """Create LCFA files and return the created ones."""
     return _mk_test_files(lcfa_pattern, (0, 1, 2, 3, 4, 5))
 
 
 @pytest.fixture
 def more_glmc_files(better_glmc_pattern):
+    """Create more GLMC files with a different pattern.
+    
+    Here the pattern is suitable for creation, not only for finding.
+    """
     return _mk_test_files(better_glmc_pattern, range(30))

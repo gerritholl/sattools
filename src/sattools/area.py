@@ -1,14 +1,14 @@
+"""Utilities to manipulate pyresample areas."""
 import numpy
 import pyresample
 
 
 def join_areadefs(*areas):
-    """Join one or more areadefinitions
+    """Join one or more areadefinitions.
 
     For a collection of areadefinitions sharing a projection and resolution,
     create the smallest area definition that encompasses all.
     """
-
     # also at https://github.com/pytroll/pyresample/pull/306
 
     first = None
@@ -37,9 +37,7 @@ def join_areadefs(*areas):
 
 
 def flatten_areas(areas):
-    """From areas and stacked areas, get all areas contained.
-    """
-
+    """From areas and stacked areas, get all areas contained."""
     for ar in areas:
         if isinstance(ar, pyresample.geometry.StackedAreaDefinition):
             yield from flatten_areas(ar.defs)
@@ -48,7 +46,5 @@ def flatten_areas(areas):
 
 
 def centre(area):
-    """Get lat/lon of centre of area.
-    """
-
+    """Get lat/lon of centre of area."""
     return area.get_lonlat(area.height//2, area.width//2)
