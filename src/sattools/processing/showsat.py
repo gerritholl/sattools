@@ -67,8 +67,7 @@ def parse_cmdline():
 def main():
     p = parse_cmdline()
     log.setup_main_handler()
-    areas = ptc.get_all_areas(["sattools", "fcitools", "satpy"],
-                              missing_ok=True)
+    areas = ptc.get_all_areas()
     files = vis.show(
             files=p.files,
             channels=p.channels,

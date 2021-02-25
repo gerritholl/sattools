@@ -37,7 +37,7 @@ def test_get_areas(caplog, tmp_path):
     import sattools.ptc
     for (nm, ar) in zip("ab", fake_areas):
         (tmp_path / nm / "etc").mkdir(parents=True)
-        with (tmp_path / nm / "etc" / "areas.yaml").open(mode="wt") as fp:
+        with (tmp_path / nm / "areas.yaml").open(mode="wt") as fp:
             fp.write(ar)
 
     with satpy.config.set(config_path=[tmp_path / "a", tmp_path / "b"]):
