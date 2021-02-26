@@ -9,11 +9,10 @@ import unittest.mock
 @unittest.mock.patch("s3fs.S3FileSystem")
 @pytest.mark.parametrize("sector", ["C", "F", "M1"])
 def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
-    """Test getting FS and files."""
-    from sattools.abi import get_fs_and_files
+    """Test getting FSFile objects."""
+    from sattools.abi import get_fsfiles
     from fsspec.implementations.local import LocalFileSystem
-    from fsspec.implementations.cached import CachingFileSystem
-    from typhon.files.handlers.common import FileInfo
+    from satpy.readers import FSFile
 
     sS.side_effect = LocalFileSystem
     monkeypatch.chdir(tmp_path)
@@ -24,35 +23,29 @@ def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
         tf.parent.mkdir(parents=True, exist_ok=True)
         tf.touch()
 
-    (fs, fns) = get_fs_and_files(
+    fsfs = get_fsfiles(
             datetime.datetime(1900, 1, 1, 0),
             datetime.datetime(1900, 1, 1, 1),
             sector=sector,
             chans={2, 3})
-    assert isinstance(fs, CachingFileSystem)
-    assert len(fns) == 2
-    assert fns == [
-            FileInfo(
-                path=str(tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{sector[0]:s}"
-                         / "1900" / "001" / "00" / f"OR_ABI-L1b-Rad{sector:s}-"
-                         f"M6C{c:>02d}_G16_s19000010005000_e19000010010000_"
-                         "c20303212359590.nc"),
-                times=[datetime.datetime(1900, 1, 1, 0, 5),
-                       datetime.datetime(1900, 1, 1, 0, 10)],
-                attr={})
-            for c in {2, 3}]
+    assert isinstance(fsfs[0], FSFile)
+    assert len(fsfs) == 2
+    assert [str(fsf) for fsf in fsfs] == [
+                str(tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{sector[0]:s}"
+                    / "1900" / "001" / "00" / f"OR_ABI-L1b-Rad{sector:s}-"
+                    f"M6C{c:>02d}_G16_s19000010005000_e19000010010000_"
+                    "c20303212359590.nc")
+                for c in {2, 3}]
 
-    (fs, fns) = get_fs_and_files(
+    assert get_fsfiles(
             datetime.datetime(1900, 1, 1, 0),
             datetime.datetime(1900, 1, 1, 1),
             sector=sector,
-            chans=12)
-    assert fns == []
+            chans=12) == []
 
 
 def test_split_meso(fake_multiscene4):
-    """Test splitting MESO by area.
-    """
+    """Test splitting MESO by area."""
     from sattools.abi import split_meso
     L = list(split_meso(fake_multiscene4))
     assert len(L) == 3

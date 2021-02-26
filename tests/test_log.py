@@ -1,3 +1,4 @@
+"""Test functionality related to logging."""
 import datetime
 import logging
 import unittest.mock
@@ -5,6 +6,7 @@ import pytest
 
 
 def test_setup_handler(tmp_path):
+    """Test that setting up the logging handlers works."""
     import sattools.log
     sattools.log.setup_main_handler(
             ["banana"], filename=tmp_path / "test.log")
@@ -13,6 +15,7 @@ def test_setup_handler(tmp_path):
 
 
 def test_log_context(tmp_path):
+    """Test that the logging context such as to a file works."""
     import sattools.log
     tofu = logging.getLogger("tofu")
     veggie = logging.getLogger("veggie")
@@ -36,6 +39,7 @@ def test_log_context(tmp_path):
 
 
 def test_logdir(tmp_path, monkeypatch):
+    """Test that we can get the log directory and it exists."""
     import sattools.log
     monkeypatch.setenv("NAS_DATA", str(tmp_path))
     notnow = datetime.datetime(1900, 1, 1, 2, 3, 4)
@@ -48,6 +52,7 @@ def test_logdir(tmp_path, monkeypatch):
 
 
 def test_raise_on_warn_handler():
+    """Test hack that raises when a warn handler is used."""
     import sattools.log
     rowh = sattools.log.RaiseOnWarnHandler()
     logger = logging.getLogger("testlogger")
@@ -66,6 +71,7 @@ def test_raise_on_warn_handler():
 
 
 def test_setup_error_handler():
+    """Test that seting up an error handler works."""
     import sattools.log
     sattools.log.setup_error_handler(["vuodnabahta"])
     logger = logging.getLogger("vuodnabahta.processing")
@@ -78,6 +84,7 @@ def test_setup_error_handler():
 
 
 def test_raise_on_warn_context():
+    """Test raising on warning in a context manager."""
     import sattools.log
     logger = logging.getLogger("vuodnabahta.processing")
     logger.warning("the mantle is toxic")

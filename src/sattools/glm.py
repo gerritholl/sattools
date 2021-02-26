@@ -1,3 +1,4 @@
+"""Routines interacting with GLM and glmtools."""
 import pathlib
 import importlib
 
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_dwd_glm_basedir(sector="C", lat=None, lon=None, period="1min"):
+    """Return the directory where processed GLM data shall be stored."""
     base = os.environ["NAS_DATA"]
     if sector not in ("C", "F", "M1", "M2"):
         raise ValueError(f"Invalid sector: {sector!s}. "
@@ -33,6 +35,7 @@ def get_dwd_glm_basedir(sector="C", lat=None, lon=None, period="1min"):
 
 
 def get_pattern_dwd_glm(sector="C", lat=None, lon=None, period="1min"):
+    """Return filename pattern for storing processed GLM data."""
     bd = get_dwd_glm_basedir(sector=sector, lat=lat, lon=lon, period=period)
     seclab = sector if sector in ("C", "F", "M1") else "M1"
     return str(bd /
@@ -48,7 +51,6 @@ def ensure_glm_lcfa_for_period(start_date, end_date):
 
     Yields the local paths for the (cached or downloaded) files.
     """
-
     logger.debug(
             "Ensuring local LCFA availability "
             f"{start_date:%Y-%m-%d %H:%M:%S}--{end_date:%H:%M:%S}")
@@ -115,8 +117,7 @@ def ensure_glm_for_period(
 
 
 def find_glm_coverage(start_date, end_date, sector="C", lat=None, lon=None):
-    """Yield intervals corresponding to GLMC coverage.
-    """
+    """Yield intervals corresponding to GLMC coverage."""
     if sector in "CF":
         pat = get_pattern_dwd_glm(sector)
     else:
@@ -130,8 +131,7 @@ def find_glm_coverage(start_date, end_date, sector="C", lat=None, lon=None):
 
 def find_glm_coverage_gaps(start_date, end_date, sector="C",
                            lat=None, lon=None):
-    """Yield intervals not covered by GLMC in period.
-    """
+    """Yield intervals not covered by GLMC in period."""
     last = pandas.Timestamp(start_date)
     for iv in find_glm_coverage(start_date, end_date, sector=sector,
                                 lat=lat, lon=lon):
@@ -143,9 +143,7 @@ def find_glm_coverage_gaps(start_date, end_date, sector="C",
 
 
 def load_file(name, path):
-    """Helper to run glmtools by importing module from file.
-    """
-
+    """Help to run glmtools by importing module from file."""
     # Source: https://stackoverflow.com/a/59937532/974555
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -154,6 +152,10 @@ def load_file(name, path):
 
 
 def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
+    """Run glmtools.
+
+    This function runs glmtools.
+    """
     # how to call this?  should not be needed as a subprocess, although maybe
     # advantageous to keep things separate, can I at least determine the
     # location for make_GLM_grids in a more portable manner?

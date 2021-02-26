@@ -1,3 +1,4 @@
+"""Tests related to sattools area module."""
 import pytest
 import numpy.testing
 
@@ -5,6 +6,7 @@ from pyresample import create_area_def
 
 
 def test_join_areadefs():
+    """Test joining area definitions."""
     from sattools.area import join_areadefs
     proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,
                  'x_0': 0, 'y_0': 0, 'ellps': 'GRS80', 'units': 'm',
@@ -58,6 +60,7 @@ def test_join_areadefs():
 
 
 def test_centre():
+    """Test calculating area centre."""
     from sattools.area import centre
 
     proj_dict = {'proj': 'geos', 'sweep': 'x', 'lon_0': 0, 'h': 35786023,

@@ -39,7 +39,6 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
     Returns:
         (multiscene, resampled multiscene)
     """
-
     logger.info("Constructing multiscene")
     ms = satpy.MultiScene.from_files(
             [str(x) for x in files],
@@ -89,22 +88,21 @@ def _get_all_areas_from_multiscene(ms, datasets=None):
 def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
     """Prepare args for ABI/GLM joint multiscene.
 
-    Returns (glm_fs, glm_files, abi_fs, abi_files, scene_kwargs)
+    Returns (glm_fsfiles, abi_fsfiles)
     """
     if sector not in "CF":
         raise ValueError(
                 "Only sectors 'C' and 'F' are supported here. "
                 "For MESO use get_abi_glm_multiscenes.")
-    glm_files = list(glm.ensure_glm_for_period(
+    glm_fns = list(glm.ensure_glm_for_period(
         start_date, end_date, sector=sector))
-    (abi_fs, abi_files) = abi.get_fs_and_files(
-            start_date, end_date, sector=sector, chans=chans)
     lfs = fsspec.implementations.local.LocalFileSystem()
-    scene_kwargs = {
-        "reader_kwargs": {
-            "glm_l2": {"file_system": lfs},
-            "abi_l1b": {"file_system": abi_fs}}}
-    return (lfs, glm_files, abi_fs, abi_files, scene_kwargs)
+    glm_fsfiles = [
+            satpy.readers.FSFile(fn, lfs)
+            for fn in glm_fns]
+    abi_fsfiles = abi.get_fsfiles(
+            start_date, end_date, sector=sector, chans=chans)
+    return (glm_fsfiles, abi_fsfiles)
 
 
 def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
@@ -119,21 +117,18 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
     slightly from the one for the ABI channels, so you may have to resample the
     result.
     """
-
     if sector not in {"M1", "M2", "C", "F"}:
         raise ValueError(
                 f"Invalid sector.  Expected M1, M2, C, or F.  Got {sector:s}")
     if sector.startswith("M"):
         # first iteration through ABI to know what areas covered
-        (abi_fs, files) = abi.get_fs_and_files(
+        abi_fsfiles = abi.get_fsfiles(
                 start_date, end_date, sector=sector, chans=chans[0])
         lfs = fsspec.implementations.local.LocalFileSystem()
+        # FIXME: this should be called differently now
         ms = satpy.MultiScene.from_files(
-                [str(x) for x in files],
+                [str(x) for x in abi_fsfiles],
                 reader=["abi_l1b"],
-                scene_kwargs={
-                    "reader_kwargs": {
-                        "abi_l1b": {"file_system": abi_fs}}},
                 group_keys=["start_time"],
                 time_threshold=30)
         with log.RaiseOnWarnContext(logging.getLogger("satpy")):
@@ -150,18 +145,16 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
             here_glm_files = list(glm.ensure_glm_for_period(
                 here_start, here_end, sector=sector,
                 lon=clon, lat=clat))
-            here_abi_files = abi.get_fs_and_files(
-                    here_start, here_end, sector=sector, chans=chans)[1]
+            here_glm_fsfiles = [satpy.readers.FSFile(
+                fn, lfs) for fn in here_glm_files]
+            here_abi_fsfiles = abi.get_fsfiles(
+                    here_start, here_end, sector=sector, chans=chans)
             here_ms = satpy.MultiScene.from_files(
-                    [str(x) for x in here_glm_files] +
-                    [str(x) for x in here_abi_files],
+                    here_glm_fsfiles +
+                    here_abi_fsfiles,
                     reader=["abi_l1b", "glm_l2"],
-                    scene_kwargs={
-                        "reader_kwargs": {
-                            "abi_l1b": {"file_system": abi_fs},
-                            "glm_l2": {"file_system": lfs}}},
-                        group_keys=["start_time"],
-                        time_threshold=35)
+                    group_keys=["start_time"],
+                    time_threshold=35)
             with log.RaiseOnWarnContext(logging.getLogger("satpy")):
                 here_ms.load([f"C{c:>02d}" for c in chans] + from_glm)
                 here_ms.scenes

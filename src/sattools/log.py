@@ -11,6 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class WarningLoggedError(Exception):
+    """Special exception to raise when a warning message is logged.
+
+    Satpy has the tendency to log warnings when things are wrong, I'd like to
+    raise an exception when this happens.
+    """
+
     pass
 
 
@@ -19,7 +25,7 @@ def setup_main_handler(
         level=logging.DEBUG,
         stderr=True,
         filename=None):
-    """Setup the main handlers.
+    """Set up the main handlers.
 
     By default, setups a stderr StreamHandler.  Optionally also sets up a
     FileHandler.
@@ -49,13 +55,21 @@ def setup_main_handler(
 # this class is based on
 # https://docs.python.org/3.10/howto/logging-cookbook.html#using-a-context-manager-for-selective-logging  # noqa: E501
 class LoggingContext:
+    """Context manager to temporarily log differently."""
+
     def __init__(self, logger, level=None, handler=None, close=True):
+        """Initiate logging context manager.
+
+        Pass the logger, log level, handler, and whether it should be closed at
+        the end or not.
+        """
         self.logger = logger
         self.level = level
         self.handler = handler
         self.close = close
 
     def __enter__(self):
+        """Enter the context manager."""
         if self.level is not None:
             self.old_level = self.logger.level
             self.logger.setLevel(self.level)
@@ -63,6 +77,7 @@ class LoggingContext:
             self.logger.addHandler(self.handler)
 
     def __exit__(self, et, ev, tb):
+        """Exit the context manager."""
         if self.level is not None:
             self.logger.setLevel(self.old_level)
         if self.handler:
@@ -73,18 +88,19 @@ class LoggingContext:
 
 
 class LogToTimeFile(LoggingContext):
-    """Logging context to log to a file
+    """Log to file within context manager.
 
     This is intended to be used when files are processed, and a corresponding
     logfile shall be written.
 
-    Example:
+    Example::
 
-    with log.LogToTimeFile(logfile):
-        ...
+        with log.LogToTimeFile(logfile):
+            ...
     """
 
     def __init__(self, logfile):
+        """Initiate the logging context manager."""
         logger = logging.getLogger()  # root logger
         self.logfile = logfile
         handler = logging.FileHandler(logfile, encoding="utf-8")
@@ -99,11 +115,13 @@ class LogToTimeFile(LoggingContext):
                          close=True)
 
     def __enter__(self):
+        """Enter the logging to time file context manager."""
         super().__enter__()
         logger.info(f"Opening logfile at {self.logfile!s}")
         return self
 
     def __exit__(self, et, ev, tb):
+        """Exit the logging to time file context manager."""
         logger.info(f"Closing logfile at {self.logfile!s}")
         super().__exit__(et, ev, tb)
 
@@ -129,7 +147,10 @@ def logfile(name, label, create_dir=True):
 
 
 class RaiseOnWarnHandler(logging.Handler):
+    """Logging handler to raise exception when warning message logged."""
+
     def emit(self, record):
+        """Raise a warning if record level warning or worse."""
         if record.levelno >= logging.WARNING:
             raise WarningLoggedError(
                     "A warning was logged with message " +
@@ -137,11 +158,10 @@ class RaiseOnWarnHandler(logging.Handler):
 
 
 def setup_error_handler(mods=["satpy"]):
-    """Setup a handler that turns log warnings into exceptions.
+    """Set up a handler that turns log warnings into exceptions.
 
     By default only covers warnings issued by satpy.
     """
-
     rowh = RaiseOnWarnHandler()
 
     for m in mods:
@@ -151,6 +171,9 @@ def setup_error_handler(mods=["satpy"]):
 
 
 class RaiseOnWarnContext(LoggingContext):
+    """Context manager to turn logged warnings into exceptions."""
+
     def __init__(self, logger):
+        """Initiate the context manager."""
         rowh = RaiseOnWarnHandler()
         super().__init__(logger, handler=rowh)
