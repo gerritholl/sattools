@@ -85,7 +85,7 @@ def _get_all_areas_from_multiscene(ms, datasets=None):
     return S
 
 
-def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
+#def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
     """Prepare args for ABI/GLM joint multiscene.
 
     Returns (glm_fsfiles, abi_fsfiles)
@@ -121,48 +121,85 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
         raise ValueError(
                 f"Invalid sector.  Expected M1, M2, C, or F.  Got {sector:s}")
     if sector.startswith("M"):
-        # first iteration through ABI to know what areas covered
-        abi_fsfiles = abi.get_fsfiles(
-                start_date, end_date, sector=sector, chans=chans[0])
-        lfs = fsspec.implementations.local.LocalFileSystem()
-        # FIXME: this should be called differently now
-        ms = satpy.MultiScene.from_files(
-                [str(x) for x in abi_fsfiles],
-                reader=["abi_l1b"],
-                group_keys=["start_time"],
-                time_threshold=30)
-        with log.RaiseOnWarnContext(logging.getLogger("satpy")):
-            ms.load([f"C{chans[0]:>02d}"])
-            ms.scenes
-        for (cnt, split) in enumerate(abi.split_meso(ms)):
-            if limit is not None and cnt >= limit:
-                break
-            here_start = split.scenes[0][f"C{chans[0]:>02d}"].attrs[
-                    "start_time"]
-            here_end = split.scenes[-1][f"C{chans[0]:>02d}"].attrs["end_time"]
-            clon, clat = area.centre(
-                    split.first_scene[f"C{chans[0]:>02d}"].attrs["area"])
-            here_glm_files = list(glm.ensure_glm_for_period(
-                here_start, here_end, sector=sector,
-                lon=clon, lat=clat))
-            here_glm_fsfiles = [satpy.readers.FSFile(
-                fn, lfs) for fn in here_glm_files]
-            here_abi_fsfiles = abi.get_fsfiles(
-                    here_start, here_end, sector=sector, chans=chans)
-            here_ms = satpy.MultiScene.from_files(
-                    here_glm_fsfiles +
-                    here_abi_fsfiles,
-                    reader=["abi_l1b", "glm_l2"],
-                    group_keys=["start_time"],
-                    time_threshold=35)
-            with log.RaiseOnWarnContext(logging.getLogger("satpy")):
-                here_ms.load([f"C{c:>02d}" for c in chans] + from_glm)
-                here_ms.scenes
-            yield here_ms
+        yield from _get_abi_glm_meso_multiscenes(
+                start_date, end_date, chans, sector, from_glm, limit)
     else:
-        raise NotImplementedError(
-                "Processing other modes than M1 or M2 is currently not "
-                "supported.  The processing currently assumes there is a "
-                "one-to-one match between GLM-files and ABI-files, and GLM "
-                "processing remains hardcoded for 1-minute. "
-                "See https://github.com/gerritholl/sattools/issues/34")
+        yield _get_abi_glm_nonmeso_multiscene()
+
+
+def _get_abi_glm_meso_multiscene(start_date, end_date, chans, sector,
+                                 from_glm, limit):
+    """Yield multiple multiscenes for single MESO scene.
+
+    New multiscene whenever MESO location changes.
+
+    Helper for get_abi_glm_multiscenes.
+    """
+
+    # first iteration through ABI to know what areas covered
+    abi_fsfiles = abi.get_fsfiles(
+            start_date, end_date, sector=sector, chans=chans[0])
+    lfs = fsspec.implementations.local.LocalFileSystem()
+    # FIXME: this should be called differently now
+    ms = satpy.MultiScene.from_files(
+            [str(x) for x in abi_fsfiles],
+            reader=["abi_l1b"],
+            group_keys=["start_time"],
+            time_threshold=30)
+    with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+        ms.load([f"C{chans[0]:>02d}"])
+        ms.scenes
+    for (cnt, split) in enumerate(abi.split_meso(ms)):
+        if limit is not None and cnt >= limit:
+            break
+        here_start = split.scenes[0][f"C{chans[0]:>02d}"].attrs[
+                "start_time"]
+        here_end = split.scenes[-1][f"C{chans[0]:>02d}"].attrs["end_time"]
+        clon, clat = area.centre(
+                split.first_scene[f"C{chans[0]:>02d}"].attrs["area"])
+        here_glm_files = list(glm.ensure_glm_for_period(
+            here_start, here_end, sector=sector,
+            lon=clon, lat=clat))
+        here_glm_fsfiles = [satpy.readers.FSFile(
+            fn, lfs) for fn in here_glm_files]
+        here_abi_fsfiles = abi.get_fsfiles(
+                here_start, here_end, sector=sector, chans=chans)
+        here_ms = satpy.MultiScene.from_files(
+                here_glm_fsfiles +
+                here_abi_fsfiles,
+                reader=["abi_l1b", "glm_l2"],
+                group_keys=["start_time"],
+                time_threshold=35)
+        with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+            here_ms.load([f"C{c:>02d}" for c in chans] + from_glm)
+            here_ms.scenes
+        yield here_ms
+
+
+def _get_abi_glm_nonmeso_multiscene(
+        start_date, end_date, chans, sector, from_glm):
+    """Get a multiscene with ABI and GLM for period.
+
+    Sector should be conus or full, not meso.  For meso use
+    _get_abi_glm_meso_multiscene.  Helper for get_abi_glm_multiscenes.
+    """
+    abi_fsfiles = abi.get_fsfiles(
+            start_date, end_date, sector=sector, chans=chans)
+    glm_files = glm.ensure_glm_for_period(
+            start_date, end_date, sector=sector)
+    ms = satpy.MultiScene.from_files(
+            abi_fsfiles + glm_fsfiles,
+            reader=["abi_l1b", "glm_l2"],
+            group_keys=["start_time"],
+            time_threshold=time_threshold)
+    with log.RaiseOnWarnContext(logging.getLogger("satpy")):
+        ms.load([f"C{c:>02d}" for c in chans] + from_glm)
+        ms.scenes
+    return ms
+    raise NotImplementedError(
+            "Processing other modes than M1 or M2 is currently not "
+            "supported.  The processing currently assumes there is a "
+            "one-to-one match between GLM-files and ABI-files, and GLM "
+            "processing remains hardcoded for 1-minute. "
+            "See https://github.com/gerritholl/sattools/issues/34")
+

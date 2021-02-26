@@ -183,8 +183,17 @@ def show_video_abi_glm(
     mr.save_animation(str(out_dir / vid_out), enh_args=enh_args)
 
 
-def show_video_abi_glm_times(start_date, end_date, out_dir):
+def show_video_abi_glm_times(
+        start_date, end_date, out_dir, sector="F"):
     """Show a ABI/GLM video between start_date and end_date."""
-    raise NotImplementedError(
-        "Showing a video is currently broken.  "
-        "See https://github.com/gerritholl/sattools/issues/35")
+
+    ms = next(scutil.get_abi_glm_multiscenes(
+            start_date,
+            end_date,
+            chans=[14],
+            sector=sector,
+            from_glm="C14_yellow_lightning"))
+    ms.scenes[0].save_datasets(
+            filename=str(out_dir / img_out),
+            overlay=enh_args["overlay"])
+    ms.save_animation(str(out_dir / vid_out), enh_args=enh_args)
