@@ -1,5 +1,4 @@
-"""Utilities related to pytroll configuration
-"""
+"""Utilities related to pytroll configuration."""
 
 import logging
 import os.path
@@ -12,11 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def get_all_areas():
-    """Get a dictionary with all findable areas
+    """Get a dictionary with all findable areas.
 
     This relies on the satpy configuration path being set correctly.
     """
-
     core = pkg_resources.resource_filename("satpy", "etc/areas.yaml")
     others = [os.path.join(x, "areas.yaml") for x in
               satpy.config["config_path"]]

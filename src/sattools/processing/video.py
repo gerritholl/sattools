@@ -1,5 +1,4 @@
-"""Show satellite ABI + GLM video with pytroll.
-"""
+"""Show satellite ABI + GLM video with pytroll."""
 
 import pathlib
 import argparse
@@ -9,6 +8,7 @@ from .. import log
 
 
 def get_parser():
+    """Get the argument parser."""
     parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -40,10 +40,12 @@ def get_parser():
 
 
 def parse_cmdline():
+    """Parse the command line."""
     return get_parser().parse_args()
 
 
 def main():
+    """Parse commandline and call visualisation routines."""
     p = parse_cmdline()
     log.setup_main_handler(
         mods=("fogtools", "typhon", "fogpy", "sattools", "fcitools", "satpy",

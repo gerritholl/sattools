@@ -12,8 +12,6 @@ def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
     """Test getting FSFile objects."""
     from sattools.abi import get_fsfiles
     from fsspec.implementations.local import LocalFileSystem
-    from fsspec.implementations.cached import CachingFileSystem
-    from typhon.files.handlers.common import FileInfo
     from satpy.readers import FSFile
 
     sS.side_effect = LocalFileSystem
@@ -34,9 +32,9 @@ def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
     assert len(fsfs) == 2
     assert [str(fsf) for fsf in fsfs] == [
                 str(tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{sector[0]:s}"
-                         / "1900" / "001" / "00" / f"OR_ABI-L1b-Rad{sector:s}-"
-                         f"M6C{c:>02d}_G16_s19000010005000_e19000010010000_"
-                         "c20303212359590.nc")
+                    / "1900" / "001" / "00" / f"OR_ABI-L1b-Rad{sector:s}-"
+                    f"M6C{c:>02d}_G16_s19000010005000_e19000010010000_"
+                    "c20303212359590.nc")
                 for c in {2, 3}]
 
     assert get_fsfiles(
@@ -47,8 +45,7 @@ def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
 
 
 def test_split_meso(fake_multiscene4):
-    """Test splitting MESO by area.
-    """
+    """Test splitting MESO by area."""
     from sattools.abi import split_meso
     L = list(split_meso(fake_multiscene4))
     assert len(L) == 3

@@ -224,7 +224,7 @@ def lcfa_files(lcfa_pattern):
 @pytest.fixture
 def more_glmc_files(better_glmc_pattern):
     """Create more GLMC files with a different pattern.
-    
+
     Here the pattern is suitable for creation, not only for finding.
     """
     return _mk_test_files(better_glmc_pattern, range(30))

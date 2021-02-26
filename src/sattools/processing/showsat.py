@@ -1,5 +1,4 @@
-"""Show satellite data with pytroll.
-"""
+"""Show satellite data with pytroll."""
 
 import pathlib
 import argparse
@@ -9,6 +8,7 @@ from .. import ptc
 
 
 def get_parser():
+    """Get the argument parser."""
     parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -61,10 +61,12 @@ def get_parser():
 
 
 def parse_cmdline():
+    """Parse commandline arguments."""
     return get_parser().parse_args()
 
 
 def main():
+    """Parse the commandline arguments and visualise a satellite image."""
     p = parse_cmdline()
     log.setup_main_handler()
     areas = ptc.get_all_areas()

@@ -1,3 +1,4 @@
+"""Routines for satellite visualisation."""
 import pathlib
 
 import xarray
@@ -57,7 +58,7 @@ def show(
         path_to_coastlines=None,
         label="",
         show_only_coastlines=False):
-    """Visualise satellite data with pytroll
+    """Visualise satellite data with pytroll.
 
     From a set of files containing satellite data, visualise channels and
     composites for the given regions/areas, possibly adding coastlines.
@@ -161,7 +162,6 @@ def show_video_abi_glm(
 
     Show a video with ABI MESO and GLM L2 C14_flash_extent_density.
     """
-
     (ms, mr) = scutil.get_resampled_multiscene(
             files,
             reader=["glm_l2", "abi_l1b"],
@@ -184,8 +184,7 @@ def show_video_abi_glm(
 
 
 def show_video_abi_glm_times(start_date, end_date, out_dir):
-    """Show a ABI/GLM video between start_date and end_date.
-    """
+    """Show a ABI/GLM video between start_date and end_date."""
     raise NotImplementedError(
         "Showing a video is currently broken.  "
         "See https://github.com/gerritholl/sattools/issues/35")

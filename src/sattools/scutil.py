@@ -39,7 +39,6 @@ def get_resampled_multiscene(files, reader, load_first, load_next,
     Returns:
         (multiscene, resampled multiscene)
     """
-
     logger.info("Constructing multiscene")
     ms = satpy.MultiScene.from_files(
             [str(x) for x in files],
@@ -118,7 +117,6 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
     slightly from the one for the ABI channels, so you may have to resample the
     result.
     """
-
     if sector not in {"M1", "M2", "C", "F"}:
         raise ValueError(
                 f"Invalid sector.  Expected M1, M2, C, or F.  Got {sector:s}")

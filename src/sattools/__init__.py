@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""Main sattools package."""
 from pkg_resources import get_distribution, DistributionNotFound
 
 try:

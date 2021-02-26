@@ -107,7 +107,7 @@ def test_ensure_glm_lcfa(sS, au, lcfa_pattern, lcfa_files, tmp_path, caplog,
 @patch("s3fs.S3FileSystem")
 def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
                     lcfa_files, tmp_path, monkeypatch):
-    "Test ensuring GLM GLMC is calculated."""
+    """Test ensuring GLM GLMC is calculated."""
     from sattools.glm import ensure_glm_for_period
     from sattools.glm import get_pattern_dwd_glm
     from fsspec.implementations.local import LocalFileSystem
@@ -258,7 +258,7 @@ def test_find_gaps(glm_files, monkeypatch, tmp_path):
 
 
 def test_run_glmtools(tmp_path, caplog, monkeypatch):
-    """Test running glmtools".
+    """Test running glmtools."""
     from sattools.glm import run_glmtools
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     with patch("sattools.glm.load_file") as sgl:
