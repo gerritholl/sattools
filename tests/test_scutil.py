@@ -168,6 +168,10 @@ def test_collapse_multiscene():
     in_ = satpy.MultiScene(
         [satpy.tests.utils.make_fake_scene(cont_full if i%3 else cont_part)
             for i in range(6)])
+    for sc in in_.scenes:
+        sc["raspberry"].attrs["sensor"] = "glm"
+        if "strawberry" in sc:
+            sc["strawberry"].attrs["sensor"] = "abi"
     ref = satpy.MultiScene(
             [satpy.tests.utils.make_fake_scene(
                 {"raspberry": cont_part["raspberry"],
