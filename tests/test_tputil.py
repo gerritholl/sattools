@@ -12,3 +12,4 @@ def test_fileinfo2fspath():
     fi = FileInfo("/tmp/tofu", fs=lfs)
     fsf = FSFile("/tmp/tofu", fs=lfs)
     assert fileinfo2fspath(fi) == fsf
+    assert isinstance(fsf._file, str)
