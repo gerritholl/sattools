@@ -166,3 +166,28 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
                 "one-to-one match between GLM-files and ABI-files, and GLM "
                 "processing remains hardcoded for 1-minute. "
                 "See https://github.com/gerritholl/sattools/issues/34")
+
+
+def collapse_abi_glm_multiscene(ms):
+    """Collapse an inhomogeneous ABI-GLM multiscene.
+
+    When an ABI-GLM multiscene has been collected, such as with
+    get_abi_glm_multiscenes, we may have a patterns in which every step has GLM
+    data but only some steps have ABI data.  This function integrates
+    subsequent GLM data and produces a multiscene in which each scene has
+    exactly one ABI and one GLM.
+    """
+
+    # We want to integrate GLM until the next ABI.  Or average?
+    # Maybe average is safer so we don't get artificially high flash
+    # densities should an ABI be missing on occasion.
+
+    for sc in ms.scenes:
+        for did in sc.keys():
+            if (sens:=sc[did].attrs["sensor"]) == "glm":
+                ...
+            elif sens == "abi":
+                ...
+            else:
+                ...
+    raise NotImplementedError()
