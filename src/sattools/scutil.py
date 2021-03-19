@@ -5,6 +5,7 @@ import numbers
 
 import satpy
 import fsspec
+import xarray
 
 from . import area
 from . import glm
@@ -182,12 +183,33 @@ def collapse_abi_glm_multiscene(ms):
     # Maybe average is safer so we don't get artificially high flash
     # densities should an ABI be missing on occasion.
 
-    for sc in ms.scenes:
-        for did in sc.keys():
-            if (sens:=sc[did].attrs["sensor"]) == "glm":
-                ...
+    scenes = []
+    glm = {}
+    abi_cont = {}
+    for old in ms.scenes:
+        for did in sorted(old.keys()):
+            if (sens:=old[did].attrs["sensor"]) == "glm":
+                if did.name == "flash_extent_density":
+                    if not did in glm:
+                        glm[did] = []
+                    glm[did].append(old[did])
+                else:
+                    raise ValueError("For GLM I can only handle "
+                                     f"flash_extent_density, not {did!s}")
             elif sens == "abi":
-                ...
+                abi_cont[did] = old[did]
             else:
-                ...
-    raise NotImplementedError()
+                raise ValueError("I can only handle GLM and ABI, but I got "
+                        f"{sens!s}")
+        # gone through all in the scene now...
+        # if I had new ABI, then make new scene collecting GLM...
+        if abi_cont:
+            sc = satpy.Scene()
+            for (did, val) in abi_cont.items():
+                sc[did] = val
+            for (did, vals) in glm.items():
+                sc[did] = xarray.concat(vals, "dummy").mean("dummy")
+            scenes.append(sc)
+            glm.clear()
+            abi_cont.clear()
+    return satpy.MultiScene(scenes)
