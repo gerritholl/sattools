@@ -10,7 +10,6 @@ import logging
 import os
 
 from typhon.files.fileset import FileSet
-from . import tputil
 
 pattern_s3_glm_lcfa = (
         "noaa-goes16/GLM-L2-LCFA/{year}/{doy}/{hour}/"
@@ -115,7 +114,7 @@ def ensure_glm_for_period(
         pat = get_pattern_dwd_glm(sector, lat=lat, lon=lon)
     glm = FileSet(path=pat, name="glm")
     for fileinfo in glm.find(start_date, end_date, no_files_error=True):
-        yield tputil.fileinfo2fspath(fileinfo)
+        yield os.fspath(fileinfo)
 
 
 def find_glm_coverage(start_date, end_date, sector="C", lat=None, lon=None):

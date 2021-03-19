@@ -113,7 +113,6 @@ def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
     from sattools.glm import ensure_glm_for_period
     from sattools.glm import get_pattern_dwd_glm
     from fsspec.implementations.local import LocalFileSystem
-    from satpy.readers import FSFile
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     au.return_value = str(tmp_path / "whole-file-cache")
     sS.return_value = LocalFileSystem()
@@ -140,7 +139,7 @@ def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
                 datetime.datetime(1900, 1, 1, 0, 6, 0),
                 sector="C")
         fi = next(g)
-        assert isinstance(fi, FSFile)
+        assert isinstance(fi, str)
         assert os.fspath(fi) == os.fspath(
                 tmp_path / "nas" / "GLM-processed" / "C" /
                 "1min" / "1900" / "01" / "01" / "00" /
