@@ -10,7 +10,6 @@ import logging
 import os
 
 from typhon.files.fileset import FileSet
-from . import tputil
 
 pattern_s3_glm_lcfa = (
         "noaa-goes16/GLM-L2-LCFA/{year}/{doy}/{hour}/"
