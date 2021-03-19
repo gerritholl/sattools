@@ -10,6 +10,7 @@ import logging
 import os
 
 from typhon.files.fileset import FileSet
+from . import tputil
 
 pattern_s3_glm_lcfa = (
         "noaa-goes16/GLM-L2-LCFA/{year}/{doy}/{hour}/"
@@ -83,7 +84,7 @@ def ensure_glm_for_period(
         start_date, end_date, sector="C", lat=None, lon=None):
     """Get gridded GLM for period, unless already existing.
 
-    Yields resulting GLM files.
+    Yields resulting GLM files as FSPath objects.
     """
     logger.debug(
             "Locating GLM gaps between "
@@ -113,7 +114,8 @@ def ensure_glm_for_period(
     else:
         pat = get_pattern_dwd_glm(sector, lat=lat, lon=lon)
     glm = FileSet(path=pat, name="glm")
-    yield from glm.find(start_date, end_date, no_files_error=True)
+    for fileinfo in glm.find(start_date, end_date, no_files_error=True):
+        yield tputil.fileinfo2fspath(fileinfo)
 
 
 def find_glm_coverage(start_date, end_date, sector="C", lat=None, lon=None):
