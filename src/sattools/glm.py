@@ -84,7 +84,7 @@ def ensure_glm_for_period(
         start_date, end_date, sector="C", lat=None, lon=None):
     """Get gridded GLM for period, unless already existing.
 
-    Yields resulting GLM files.
+    Yields resulting GLM files as FSPath objects.
     """
     logger.debug(
             "Locating GLM gaps between "
