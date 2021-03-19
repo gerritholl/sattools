@@ -47,7 +47,7 @@ def get_fsfiles(start_date, end_date, sector="F", chans=14):
     files = list(
             fi for fi in abi_fileset.find(start_date, end_date)
             if any(f"C{c:>02d}_" in fi.path for c in chans))
-    return [satpy.readers.FSFile(f, fs_block) for f in files]
+    return [satpy.readers.FSFile(fi.path, fs=fs_block) for fi in files]
 
 
 def split_meso(ms):

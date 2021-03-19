@@ -12,6 +12,7 @@ def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
     """Test getting FSFile objects."""
     from sattools.abi import get_fsfiles
     from fsspec.implementations.local import LocalFileSystem
+    from fsspec.implementations.cached import CachingFileSystem
     from satpy.readers import FSFile
 
     sS.side_effect = LocalFileSystem
@@ -36,6 +37,8 @@ def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
                     f"M6C{c:>02d}_G16_s19000010005000_e19000010010000_"
                     "c20303212359590.nc")
                 for c in {2, 3}]
+    assert isinstance(fsfs[0]._file, str)
+    assert isinstance(fsfs[0]._fs, CachingFileSystem)
 
     assert get_fsfiles(
             datetime.datetime(1900, 1, 1, 0),
