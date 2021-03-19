@@ -140,7 +140,7 @@ def test_ensure_glm(sS, au, sgr, glm_files, lcfa_pattern,
                 datetime.datetime(1900, 1, 1, 0, 6, 0),
                 sector="C")
         fi = next(g)
-        assert isinstance(fi, FSFile)
+        assert isinstance(fi, str)
         assert os.fspath(fi) == os.fspath(
                 tmp_path / "nas" / "GLM-processed" / "C" /
                 "1min" / "1900" / "01" / "01" / "00" /
