@@ -176,12 +176,18 @@ def collapse_abi_glm_multiscene(ms):
     get_abi_glm_multiscenes, we may have a patterns in which every step has GLM
     data but only some steps have ABI data.  This function integrates
     subsequent GLM data and produces a multiscene in which each scene has
-    exactly one ABI and one GLM.
-    """
+    exactly one ABI and one GLM, by averaging GLM flash extent densities up to
+    the next available ABI.
 
-    # We want to integrate GLM until the next ABI.  Or average?
-    # Maybe average is safer so we don't get artificially high flash
-    # densities should an ABI be missing on occasion.
+    Args:
+        ms (satpy.MultiScene)
+            Multiscene for which averaging will be applied, where all scenes
+            have GLM but not all scenes have ABI.
+
+    Returns:
+        satpy.MultiScene
+            New (shorter) MultiScene where each scene has both GLM and ABI.
+    """
 
     scenes = []
     glm = {}
@@ -189,7 +195,7 @@ def collapse_abi_glm_multiscene(ms):
     for old in ms.scenes:
         for did in sorted(old.keys()):
             if (sens:=old[did].attrs["sensor"]) == "glm":
-                if did.name == "flash_extent_density":
+                if did["name"] == "flash_extent_density":
                     if not did in glm:
                         glm[did] = []
                     glm[did].append(old[did])
