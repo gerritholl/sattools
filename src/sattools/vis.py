@@ -184,7 +184,13 @@ def show_video_abi_glm(
 
 
 def show_video_abi_glm_times(
-        start_date, end_date, out_dir, sector="F"):
+        start_date, end_date, out_dir,
+        img_out="{platform_name}-{sensor}-{name}-"
+                "{start_time:%Y%m%d%H%M%S}-{end_time:%Y%m%d%H%M%S}.tif",
+        vid_out="{platform_name}-{name}-{area.area_id}-"
+                "{start_time:%Y%m%d%H%M%S}-{end_time:%Y%m%d%H%M%S}.mp4",
+        sector="F",
+        area=None):
     """Show a ABI/GLM video between start_date and end_date."""
     ms = next(scutil.get_abi_glm_multiscenes(
             start_date,
@@ -192,7 +198,12 @@ def show_video_abi_glm_times(
             chans=[14],
             sector=sector,
             from_glm="C14_yellow_lightning"))
-    ms.scenes[0].save_datasets(
+    if area:
+        ls = ms.resample(area)
+        ls.scenes
+    else:
+        ls = ms
+    ls.scenes[0].save_datasets(
             filename=str(out_dir / img_out),
             overlay=enh_args["overlay"])
-    ms.save_animation(str(out_dir / vid_out), enh_args=enh_args)
+    ls.save_animation(str(out_dir / vid_out), enh_args=enh_args)
