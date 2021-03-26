@@ -188,15 +188,14 @@ def collapse_abi_glm_multiscene(ms):
         satpy.MultiScene
             New (shorter) MultiScene where each scene has both GLM and ABI.
     """
-
     scenes = []
     glm = {}
     abi_cont = {}
     for old in ms.scenes:
         for did in sorted(old.keys()):
-            if (sens:=old[did].attrs["sensor"]) == "glm":
+            if (sens := old[did].attrs["sensor"]) == "glm":
                 if did["name"] == "flash_extent_density":
-                    if not did in glm:
+                    if did not in glm:
                         glm[did] = []
                     glm[did].append(old[did])
                 else:
@@ -206,7 +205,7 @@ def collapse_abi_glm_multiscene(ms):
                 abi_cont[did] = old[did]
             else:
                 raise ValueError("I can only handle GLM and ABI, but I got "
-                        f"{sens!s}")
+                                 f"{sens!s}")
         # gone through all in the scene now...
         # if I had new ABI, then make new scene collecting GLM...
         if abi_cont:
