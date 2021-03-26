@@ -2,6 +2,8 @@
 import datetime
 import unittest.mock
 
+import numpy
+
 import satpy
 import pytest
 
@@ -156,3 +158,31 @@ def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
                 chans=[8, 10],
                 sector="M1",
                 limit=0)) == []
+
+
+def test_collapse_multiscene():
+    """Test collapsing a multiscene."""
+    from sattools.scutil import collapse_abi_glm_multiscene
+    cont_part = {"flash_extent_density": numpy.arange(6*6).reshape(6, 6)}
+    cont_full = cont_part.copy()
+    cont_full["strawberry"] = numpy.arange(6*6).reshape(6, 6)
+    in_ = satpy.MultiScene(
+        [satpy.tests.utils.make_fake_scene(
+            cont_full if i % 3 == 0 else cont_part)
+            for i in range(6)])
+    for sc in in_.scenes:
+        sc["flash_extent_density"].attrs["sensor"] = "glm"
+        if "strawberry" in sc:
+            sc["strawberry"].attrs["sensor"] = "abi"
+    ref = satpy.MultiScene(
+            [satpy.tests.utils.make_fake_scene(
+                {"flash_extent_density": cont_part["flash_extent_density"],
+                 "strawberry": 3*cont_full["strawberry"]})
+                for i in range(2)])
+    out = collapse_abi_glm_multiscene(in_)
+    # cannot directly compare multiscene or scene, see
+    # https://github.com/pytroll/satpy/issues/1583
+    assert len(out.scenes) == len(ref.scenes)
+    for (outscene, refscene) in zip(out.scenes, ref.scenes):
+        assert (outscene.to_xarray_dataset() ==
+                refscene.to_xarray_dataset()).all()

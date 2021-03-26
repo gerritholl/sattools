@@ -5,6 +5,7 @@ import numbers
 
 import satpy
 import fsspec
+import xarray
 
 from . import area
 from . import glm
@@ -85,7 +86,7 @@ def _get_all_areas_from_multiscene(ms, datasets=None):
     return S
 
 
-#def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
+def prepare_abi_glm_ms_args(start_date, end_date, chans, sector="C"):
     """Prepare args for ABI/GLM joint multiscene.
 
     Returns (glm_fsfiles, abi_fsfiles)
@@ -203,3 +204,53 @@ def _get_abi_glm_nonmeso_multiscene(
             "processing remains hardcoded for 1-minute. "
             "See https://github.com/gerritholl/sattools/issues/34")
 
+
+def collapse_abi_glm_multiscene(ms):
+    """Collapse an inhomogeneous ABI-GLM multiscene.
+
+    When an ABI-GLM multiscene has been collected, such as with
+    get_abi_glm_multiscenes, we may have a patterns in which every step has GLM
+    data but only some steps have ABI data.  This function integrates
+    subsequent GLM data and produces a multiscene in which each scene has
+    exactly one ABI and one GLM, by averaging GLM flash extent densities up to
+    the next available ABI.
+
+    Args:
+        ms (satpy.MultiScene)
+            Multiscene for which averaging will be applied, where all scenes
+            have GLM but not all scenes have ABI.
+
+    Returns:
+        satpy.MultiScene
+            New (shorter) MultiScene where each scene has both GLM and ABI.
+    """
+    scenes = []
+    glm = {}
+    abi_cont = {}
+    for old in ms.scenes:
+        for did in sorted(old.keys()):
+            if (sens := old[did].attrs["sensor"]) == "glm":
+                if did["name"] == "flash_extent_density":
+                    if did not in glm:
+                        glm[did] = []
+                    glm[did].append(old[did])
+                else:
+                    raise ValueError("For GLM I can only handle "
+                                     f"flash_extent_density, not {did!s}")
+            elif sens == "abi":
+                abi_cont[did] = old[did]
+            else:
+                raise ValueError("I can only handle GLM and ABI, but I got "
+                                 f"{sens!s}")
+        # gone through all in the scene now...
+        # if I had new ABI, then make new scene collecting GLM...
+        if abi_cont:
+            sc = satpy.Scene()
+            for (did, val) in abi_cont.items():
+                sc[did] = val
+            for (did, vals) in glm.items():
+                sc[did] = xarray.concat(vals, "dummy").mean("dummy")
+            scenes.append(sc)
+            glm.clear()
+            abi_cont.clear()
+    return satpy.MultiScene(scenes)
