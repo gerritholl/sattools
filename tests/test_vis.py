@@ -105,7 +105,6 @@ def test_flatten_areas():
 @patch("subprocess.run")
 @patch("satpy.multiscene.Scene")
 @patch("sattools.vis.show_video_abi_glm")
-@pytest.mark.xfail
 def test_show_video_from_times(
         svs, smS, sr, sS, monkeypatch, tmp_path,
         better_glmc_pattern, more_glmc_files, fakearea):
@@ -115,15 +114,19 @@ def test_show_video_from_times(
     from fsspec.implementations.cached import CachingFileSystem
     sS.return_value = LocalFileSystem()
 
+    # FIXME: add a mock here of ensure_glm_for_period which creates files
+    # on-the-fly
     monkeypatch.chdir(tmp_path)
-    for i in range(3):
-        for s in ("M1", "M2"):
+    rep = {"M1": 1, "M2": 1, "C": 5, "F": 10}
+    for i in range(20):
+        for s in ("M1", "M2", "F", "C"):
             tf = (tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{s:s}" / "1900" /
                   "001" / "00" / f"OR_ABI-L1b-Rad{s:s}-M6C14_G16_"
                   f"s19000010{i:>02d}0000_e19000010{i+1:>02d}0000_"
                   "c20403662359590.nc")
             tf.parent.mkdir(exist_ok=True, parents=True)
-            tf.touch()
+            if i % (rep[s]) == 0:
+                tf.touch()
 
     smS.return_value.__getitem__.return_value.attrs.\
         __getitem__.return_value = fakearea
