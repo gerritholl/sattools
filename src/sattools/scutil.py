@@ -113,6 +113,7 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
 
     Get multiscenes containing ABI and GLM in period.  If sector is M1 or M2,
     yield a new multiscene whenever the area covered by the sector changes.
+    If sector is C or F, yield only one multiscene.
 
     Note that the area for the GLM-based flash_extent_density could differ
     slightly from the one for the ABI channels, so you may have to resample the
@@ -125,23 +126,23 @@ def get_abi_glm_multiscenes(start_date, end_date, chans, sector,
         yield from _get_abi_glm_meso_multiscenes(
                 start_date, end_date, chans, sector, from_glm, limit)
     else:
-        yield _get_abi_glm_nonmeso_multiscene()
+        yield _get_abi_glm_nonmeso_multiscene(
+                start_date, end_date, chans, sector, from_glm)
 
 
-def _get_abi_glm_meso_multiscene(start_date, end_date, chans, sector,
-                                 from_glm, limit):
+def _get_abi_glm_meso_multiscenes(start_date, end_date, chans, sector,
+                                  from_glm, limit):
     """Yield multiple multiscenes for single MESO scene.
 
     New multiscene whenever MESO location changes.
 
     Helper for get_abi_glm_multiscenes.
     """
-
     # first iteration through ABI to know what areas covered
     abi_fsfiles = abi.get_fsfiles(
             start_date, end_date, sector=sector, chans=chans[0])
     lfs = fsspec.implementations.local.LocalFileSystem()
-    # FIXME: this should be called differently now
+    # FIXME: this should b called differently now
     ms = satpy.MultiScene.from_files(
             [str(x) for x in abi_fsfiles],
             reader=["abi_l1b"],
@@ -186,23 +187,17 @@ def _get_abi_glm_nonmeso_multiscene(
     """
     abi_fsfiles = abi.get_fsfiles(
             start_date, end_date, sector=sector, chans=chans)
-    glm_files = glm.ensure_glm_for_period(
-            start_date, end_date, sector=sector)
+    glm_files = list(glm.ensure_glm_for_period(
+            start_date, end_date, sector=sector))
     ms = satpy.MultiScene.from_files(
-            abi_fsfiles + glm_fsfiles,
+            abi_fsfiles + glm_files,
             reader=["abi_l1b", "glm_l2"],
             group_keys=["start_time"],
-            time_threshold=time_threshold)
+            time_threshold=35)
     with log.RaiseOnWarnContext(logging.getLogger("satpy")):
         ms.load([f"C{c:>02d}" for c in chans] + from_glm)
         ms.scenes
     return ms
-    raise NotImplementedError(
-            "Processing other modes than M1 or M2 is currently not "
-            "supported.  The processing currently assumes there is a "
-            "one-to-one match between GLM-files and ABI-files, and GLM "
-            "processing remains hardcoded for 1-minute. "
-            "See https://github.com/gerritholl/sattools/issues/34")
 
 
 def collapse_abi_glm_multiscene(ms):

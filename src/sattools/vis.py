@@ -186,7 +186,6 @@ def show_video_abi_glm(
 def show_video_abi_glm_times(
         start_date, end_date, out_dir, sector="F"):
     """Show a ABI/GLM video between start_date and end_date."""
-
     ms = next(scutil.get_abi_glm_multiscenes(
             start_date,
             end_date,

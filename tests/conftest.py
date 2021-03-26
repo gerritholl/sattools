@@ -113,7 +113,7 @@ def fake_multiscene3(fake_multiscene2):
 
 
 @pytest.fixture
-def fake_multiscene4():
+def fake_multiscene_vary_meso():
     """Like fake_multiscene2, but with varying areas (none stacked)."""
     from satpy.dataset.dataid import WavelengthRange
     from satpy.tests.utils import make_dataid

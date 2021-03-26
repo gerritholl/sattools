@@ -1,8 +1,10 @@
 """Tests related to scutil module."""
+import os
 import datetime
 import unittest.mock
 
 import numpy
+import pandas
 
 import satpy
 import pytest
@@ -92,41 +94,61 @@ def test_prepare_args(sag, sge, tmp_path):
 
 @unittest.mock.patch("sattools.glm.ensure_glm_for_period", autospec=True)
 @unittest.mock.patch("sattools.abi.get_fsfiles", autospec=True)
-def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
+def test_get_multiscenes(sag, sge, fake_multiscene_vary_meso, tmp_path):
     """Test getting a multiscene with ABI and GLM."""
     from sattools.scutil import get_abi_glm_multiscenes
     from sattools.abi import split_meso
     from fsspec.implementations.local import LocalFileSystem
-    from typhon.files.handlers.common import FileInfo
     from satpy.readers import FSFile
 
-    sge.return_value = [
-            FileInfo(path=str(tmp_path / f"glm{i:d}"),
-                     times=[datetime.datetime(1900, 1, 1, 0, i),
-                            datetime.datetime(1900, 1, 1, 0, i+1)],
-                     attr={})
-            for i in range(5)]
-    sag.return_value = [
-            FSFile(tmp_path / f"abi{i:d}",
-                   LocalFileSystem())
-            for i in range(5)]
+    def fake_ensure_glm(start, end, sector=None, lon=None, lat=None):
+        for ts in pandas.date_range(start, end, freq="1min", closed="left"):
+            yield os.fspath(tmp_path / f"glm{ts.minute:d}")
 
-    others = list(split_meso(fake_multiscene4))
+    def fake_abi_getfsfiles(start, end, sector=None, chans=None):
+        steps = {"M1": 1, "M2": 1, "C": 5, "F": 10}
+        return [os.fspath(tmp_path / f"abi{ts.minute:d}")
+                for ts in pandas.date_range(
+                    start, end, freq=f"{steps[sector]:d}min", closed="left")]
 
-    class FakeMultiScene(satpy.MultiScene):
+    # test meso situation
+
+    n = 10
+    sge_exp = [os.fspath(tmp_path / f"glm{i:d}") for i in range(n)]
+    sag_exp = [FSFile(tmp_path / f"abi{i:d}", LocalFileSystem())
+               for i in range(n)]
+    sge.side_effect = fake_ensure_glm
+    sag.side_effect = fake_abi_getfsfiles
+
+    others = list(split_meso(fake_multiscene_vary_meso))
+
+    class FakeMultiSceneVaryMeso(satpy.MultiScene):
         @classmethod
         def from_files(cls, files_to_sort, reader=None,
                        ensure_all_readers=False, scene_kwargs=None,
                        **kwargs):
-            if reader == ["abi_l1b"]:
-                return fake_multiscene4
-            else:
+            if set(files_to_sort) == {os.fspath(fi) for fi in sag_exp}:
+                return fake_multiscene_vary_meso
+            elif (fts_set := {os.fspath(f) for f in files_to_sort}) == {
+                            os.fspath(fi) for fi in sag_exp[:6]} | {
+                            os.fspath(fi) for fi in sge_exp[:6]}:
                 return others[0]
+            elif fts_set == {
+                    os.fspath(fi) for fi in sag_exp[6:9]} | {
+                    os.fspath(fi) for fi in sge_exp[6:9]}:
+                return others[1]
+            elif fts_set == {
+                    os.fspath(fi) for fi in sag_exp[9:10]} | {
+                    os.fspath(fi) for fi in sge_exp[9:10]}:
+                return others[2]
+            else:
+                raise RuntimeError("Bug, according to my mock setup this "
+                                   "argument should never be passed here.")
 
-    with unittest.mock.patch("satpy.MultiScene", new=FakeMultiScene):
+    with unittest.mock.patch("satpy.MultiScene", new=FakeMultiSceneVaryMeso):
         mss = list(get_abi_glm_multiscenes(
                 datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 1, 0),
+                datetime.datetime(1900, 1, 1, 0, 10),
                 chans=[8, 10],
                 sector="M1"))
         assert "C08" in mss[0].first_scene
@@ -140,24 +162,34 @@ def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
                 sector="M1",
                 lat=0.0,
                 lon=0.0)
-        with pytest.raises(NotImplementedError):
-            mss = list(get_abi_glm_multiscenes(
-                    datetime.datetime(1900, 1, 1, 0, 0),
-                    datetime.datetime(1900, 1, 1, 1, 0),
-                    chans=[8, 10],
-                    sector="F"))
+        assert len(mss) == 3
+        assert len(mss[0].scenes) == 6
+        assert len(mss[1].scenes) == 3
+        assert len(mss[2].scenes) == 1
+
+        assert list(get_abi_glm_multiscenes(
+                datetime.datetime(1900, 1, 1, 0, 0),
+                datetime.datetime(1900, 1, 1, 0, 10),
+                chans=[8, 10],
+                sector="M1",
+                limit=0)) == []
+
+    # test full situation
+
+    with unittest.mock.patch("satpy.MultiScene") as sM:
+        mss = list(get_abi_glm_multiscenes(
+                datetime.datetime(1900, 1, 1, 0, 0),
+                datetime.datetime(1900, 1, 1, 1, 0),
+                chans=[8, 10],
+                sector="F"))
+        assert len(mss) == 1
+        assert sM.from_files.call_count == 1
         with pytest.raises(ValueError):
             mss = list(get_abi_glm_multiscenes(
                     datetime.datetime(1900, 1, 1, 0, 0),
                     datetime.datetime(1900, 1, 1, 1, 0),
                     chans=[8, 10],
                     sector="full"))
-        assert list(get_abi_glm_multiscenes(
-                datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 1, 0),
-                chans=[8, 10],
-                sector="M1",
-                limit=0)) == []
 
 
 def test_collapse_multiscene():
