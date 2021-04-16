@@ -1,6 +1,9 @@
 """Test the showsat script."""
 
+import datetime
 import unittest.mock
+
+import pandas
 
 
 @unittest.mock.patch("argparse.ArgumentParser", autospec=True)
@@ -48,12 +51,23 @@ def test_video_files(fpvp, sMf, fake_multiscene2, fake_multiscene3, tmp_path):
     assert not (tmp_path / "out_dir" / "test-C14.tiff").exists()
 
 
-@unittest.mock.patch("sattools.scutil.get_abi_glm_multiscenes", autospec=True)
+@unittest.mock.patch("sattools.vis.show_video_abi_glm_times", autospec=True)
 @unittest.mock.patch("sattools.processing.video.parse_cmdline", autospec=True)
-def test_video_times(spvp, scg, tmp_path):
+def test_video_times(spvp, svs, tmp_path):
+    """Test creating video with times."""
     from sattools.processing import video
     spvp.return_value = video.get_parser_times().parse_args([
         "1900-01-01T12:00:00", "1900-01-01T12:30:00",
         "--area", "panama", "--sector", "F", "--outdir",
-        str(tmp_path / "out")])
+        str(tmp_path / "out"),
+        "--filename-pattern-image", "img.tif",
+        "--filename-pattern-video", "video.mp4"])
     video.video_times()
+    svs.assert_called_once_with(
+            start_date=pandas.Timestamp(datetime.datetime(1900, 1, 1, 12, 0)),
+            end_date=pandas.Timestamp(datetime.datetime(1900, 1, 1, 12, 30)),
+            img_out="img.tif",
+            vid_out="video.mp4",
+            area="panama",
+            sector="F",
+            out_dir=tmp_path / "out")

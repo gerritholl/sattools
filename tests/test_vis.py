@@ -1,11 +1,15 @@
 """Test visualisation routines."""
 
 import datetime
+import os
 
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock
 
+import pandas
 import pytest
 import pyresample
+import satpy.readers
+import xarray
 
 
 def test_show(fakescene, fakearea, tmp_path):
@@ -101,58 +105,59 @@ def test_flatten_areas():
     assert len(flat) == 8
 
 
-@patch("s3fs.S3FileSystem")
-@patch("subprocess.run")
-@patch("satpy.multiscene.Scene")
-@patch("sattools.vis.show_video_abi_glm")
 def test_show_video_from_times(
-        svs, smS, sr, sS, monkeypatch, tmp_path,
+        monkeypatch, tmp_path,
         better_glmc_pattern, more_glmc_files, fakearea):
     """Test showing an ABI/GLM video from times."""
     from sattools.vis import show_video_abi_glm_times
     from fsspec.implementations.local import LocalFileSystem
-    from fsspec.implementations.cached import CachingFileSystem
-    sS.return_value = LocalFileSystem()
 
-    # FIXME: add a mock here of ensure_glm_for_period which creates files
-    # on-the-fly
-    monkeypatch.chdir(tmp_path)
-    rep = {"M1": 1, "M2": 1, "C": 5, "F": 10}
-    for i in range(20):
-        for s in ("M1", "M2", "F", "C"):
-            tf = (tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{s:s}" / "1900" /
-                  "001" / "00" / f"OR_ABI-L1b-Rad{s:s}-M6C14_G16_"
-                  f"s19000010{i:>02d}0000_e19000010{i+1:>02d}0000_"
-                  "c20403662359590.nc")
+    def fake_ensure_glm(start_date, end_date, sector="C", lat=0, lon=0):
+        iv = pandas.Timedelta(1, "min")
+        files = []
+        for dt in pandas.date_range(start_date, end_date, freq=iv):
+            tf = (tmp_path / "GLM-processed" / sector / "1min" / f"{dt:%Y}" /
+                  f"{dt:%m}" / f"{dt:%d}" / f"OR_GLM-L2-GLM{sector:s}-M3_G16_"
+                  f"s{dt:%Y%j%H%M%S}0_e{dt+iv:%Y%j%H%M%S}0_c20403662359590.nc")
             tf.parent.mkdir(exist_ok=True, parents=True)
-            if i % (rep[s]) == 0:
-                tf.touch()
+            tf.touch()
+            files.append(os.fspath(tf))
+        return files
 
-    smS.return_value.__getitem__.return_value.attrs.\
-        __getitem__.return_value = fakearea
+    def fake_get_abi(start_date, end_date, sector, chans):
+        lfs = LocalFileSystem()
+        rep = {"M1": 1, "M2": 1, "C": 5, "F": 10}
+        iv = pandas.Timedelta(rep[sector], "min")
+        files = []
+        for dt in pandas.date_range(start_date, end_date, freq=iv):
+            for chan in chans:
+                tf = (tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{sector:s}" /
+                      f"{dt:%Y}" / f"{dt:%j}" / f"{dt:%H}" /
+                      "001" / "00" /
+                      f"OR_ABI-L1b-Rad{sector:s}-M6C{chan:d}_G16_"
+                      f"s{dt:%Y%j%H%M%S0}_e{dt+iv/2:%Y%j%H%M%S0}_"
+                      "c20403662359590.nc")
+                tf.parent.mkdir(exist_ok=True, parents=True)
+                tf.touch()
+                files.append(satpy.readers.FSFile(tf, fs=lfs))
+        return files
+
+    def fake_open(nc, decode_cf=True, mask_and_scale=False, chunks={}):
+        raise NotImplementedError()
+        ds = xarray.Dataset()
+        ds.attrs["time_coverage_start"] = "1900-01-01T00:00:00.0Z"
+        return ds
+
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
-    show_video_abi_glm_times(
+    with patch("sattools.abi.get_fsfiles", new=fake_get_abi), \
+            patch("sattools.glm.ensure_glm_for_period", new=fake_ensure_glm), \
+            patch("satpy.MultiScene") as sM:
+        show_video_abi_glm_times(
             datetime.datetime(1900, 1, 1, 0, 0),
             datetime.datetime(1900, 1, 1, 0, 20),
-            out_dir=tmp_path / "show-vid")
-    exp_args = [
-            str(tmp_path / "nas" / "GLM" / "GLMC" / "1min" / "1900" / "01" /
-                "01" / "00" / f"OR_GLM-L2-GLMC-M3_G16_s190000100{i:>02d}000_"
-                f"e190000100{i+1:>02d}000_c20403662359590.nc")
-            for i in range(20)] + [
-            str(tmp_path / "noaa-goes16" / f"ABI-L1b-RadM{j:d}" / "1900" /
-                "001" / "00" / f"OR_ABI-L1b-RadM{j:d}-M6C14_G16_"
-                f"s190000100{i:>01d}0000_"
-                f"e190000100{i+1:>01d}0000_c20403662359590.nc")
-            for i in range(2) for j in range(1, 3)]
-    svs.assert_called_once_with(exp_args, tmp_path/"show-vid",
-                                scene_kwargs=ANY)
-
-    assert isinstance(
-        svs.call_args[1]["scene_kwargs"]["reader_kwargs"]["glm_l2"]
-                        ["file_system"],
-        LocalFileSystem)
-    assert isinstance(
-        svs.call_args[1]["scene_kwargs"]["reader_kwargs"]["abi_l1b"]
-                        ["file_system"],
-        CachingFileSystem)
+            out_dir=tmp_path / "show-vid",
+            vid_out="test.mp4",
+            enh_args={})
+    sM.from_files.return_value.save_animation.assert_called_once_with(
+            os.fspath(tmp_path / "show-vid" / "test.mp4"),
+            enh_args={})

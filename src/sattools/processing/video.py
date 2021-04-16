@@ -10,6 +10,7 @@ from .. import vis
 from .. import log
 from .. import io
 
+
 def _add_common_to_parser(parser):
     """Add common arguments to argument parser."""
     parser.add_argument(
@@ -60,7 +61,7 @@ def get_parser_times():
             "end_time", action="store", type=pandas.Timestamp)
 
     parser.add_argument(
-            "--area", action="store", type=pathlib.Path,
+            "--area", action="store", type=str,
             help="Resample to this area")
 
     parser.add_argument(
@@ -114,4 +115,3 @@ def video_times():
             sector=p.sector,
             area=p.area)
     print("Files written to:", p.outdir)
-
