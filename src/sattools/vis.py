@@ -206,5 +206,5 @@ def show_video_abi_glm_times(
         ls = ms
     ls.scenes[0].save_datasets(
             filename=str(out_dir / img_out),
-            overlay=enh_args.get("overlay", {}))
+            overlay=enh_args.get("overlay", None))
     ls.save_animation(str(out_dir / vid_out), enh_args=enh_args)

@@ -105,7 +105,7 @@ def video_times():
     log.setup_main_handler(
         mods=("fogtools", "typhon", "fogpy", "sattools", "fcitools", "satpy",
               "pyresample"),
-        level=logging.INFO)
+        level=logging.DEBUG)
     vis.show_video_abi_glm_times(
             start_date=p.start_time,
             end_date=p.end_time,
