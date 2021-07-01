@@ -12,6 +12,8 @@ import satpy.readers
 import xarray
 import numpy
 
+from . import utils
+
 
 def test_show(fakescene, fakearea, tmp_path):
     """Test showing a scene and area."""
@@ -111,92 +113,18 @@ def test_show_video_from_times(
         better_glmc_pattern, more_glmc_files, fakearea):
     """Test showing an ABI/GLM video from times."""
     from sattools.vis import show_video_abi_glm_times
-    from fsspec.implementations.local import LocalFileSystem
 
     def fake_ensure_glm(start_date, end_date, sector="C", lat=0, lon=0):
-        iv = pandas.Timedelta(1, "min")
-        files = []
-        time_form = "%Y-%m-%dT%H:%M:%SZ"
-        for dt in pandas.date_range(start_date, end_date, freq=iv):
-            tf = (tmp_path / "GLM-processed" / sector / "1min" / f"{dt:%Y}" /
-                  f"{dt:%m}" / f"{dt:%d}" / f"OR_GLM-L2-GLM{sector:s}-M3_G16_"
-                  f"s{dt:%Y%j%H%M%S}0_e{dt+iv:%Y%j%H%M%S}0_c20403662359590.nc")
-            tf.parent.mkdir(exist_ok=True, parents=True)
-            ds = xarray.Dataset(
-                    {"flash_extent_density": (("y", "x"), numpy.empty((10, 10))),
-                     "goes_imager_projection": ((), 0, {
-                        "longitude_of_projection_origin": -75.,
-                        "latitude_of_projection_origin": 0.,
-                        "perspective_point_height": 35786023.,
-                        "semi_major_axis": 6378137.,
-                        "semi_minor_axis": 6356752.31414,
-                        "sweep_angle_axis": "x",
-                        }),
-                     "nominal_satellite_subpoint_lat": 0.,
-                     "nominal_satellite_subpoint_lon": -75.,
-                        },
-                    attrs={
-                        "time_coverage_start": dt.strftime(time_form),
-                        "time_coverage_end": (dt+iv).strftime(time_form),
-                        "spatial_resolution": "2km at nadir"})
-            ds.to_netcdf(tf)
-            files.append(os.fspath(tf))
-        return files
+        return utils.create_fake_glm_for_period(tmp_path, start_date, end_date, sector,
+                lat, lon)
 
     def fake_get_abi(start_date, end_date, sector, chans):
-        lfs = LocalFileSystem()
-        rep = {"M1": 1, "M2": 1, "C": 5, "F": 10}
-        iv = pandas.Timedelta(rep[sector], "min")
-        files = []
-        time_form = "%Y-%m-%dT%H:%M:%S.%fZ"
-        for dt in pandas.date_range(start_date, end_date, freq=iv):
-            for chan in chans:
-                tf = (tmp_path / "noaa-goes16" / f"ABI-L1b-Rad{sector:s}" /
-                      f"{dt:%Y}" / f"{dt:%j}" / f"{dt:%H}" /
-                      "001" / "00" /
-                      f"OR_ABI-L1b-Rad{sector:s}-M6C{chan:d}_G16_"
-                      f"s{dt:%Y%j%H%M%S0}_e{dt+iv/2:%Y%j%H%M%S0}_"
-                      "c20403662359590.nc")
-                tf.parent.mkdir(exist_ok=True, parents=True)
-                ds = xarray.Dataset(
-                        {"Rad": (("y", "x"), numpy.empty((10, 10))),
-                         "planck_fk1": ((), 8510.22),
-                         "planck_fk2": ((), 1286.27),
-                         "planck_bc1": ((), 0.22516),
-                         "planck_bc2": ((), 0.9992),
-                         "nominal_satellite_subpoint_lat": ((), 0.),
-                         "nominal_satellite_subpoint_lon": ((), -75.),
-                         "nominal_satellite_height": ((), 35786.02),
-                         "yaw_flip_flag": ((), 0),
-                         "goes_imager_projection": ((), 0, {
-                            "longitude_of_projection_origin": -75.,
-                            "latitude_of_projection_origin": 0.,
-                            "perspective_point_height": 35786023.,
-                            "semi_major_axis": 6378137.,
-                            "semi_minor_axis": 6356752.31414,
-                            "sweep_angle_axis": "x"
-                             })},
-                        attrs={
-                            "time_coverage_start": dt.strftime(time_form),
-                            "time_coverage_end": (dt+iv).strftime(time_form)})
-                ds.to_netcdf(tf)
-                # Should test with FSFile here, but bug
-                # https://github.com/pytroll/satpy/issues/1741 so testing with
-                # just filename instead
-                # should be: files.append(satpy.readers.FSFile(tf, fs=lfs))
-                files.append(os.fspath(tf))
-        return files
-
-#    def fake_open(nc, decode_cf=True, mask_and_scale=False, chunks={}):
-#        raise NotImplementedError()
-#        ds = xarray.Dataset()
-#        ds.attrs["time_coverage_start"] = "1900-01-01T00:00:00.0Z"
-#        return ds
+        return utils.create_fake_abi_for_period(tmp_path, start_date, end_date,
+                sector, chans)
 
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     with patch("sattools.abi.get_fsfiles", new=fake_get_abi), \
             patch("sattools.glm.ensure_glm_for_period", new=fake_ensure_glm):
-#            patch("satpy.MultiScene") as sM:
         show_video_abi_glm_times(
             datetime.datetime(1900, 1, 1, 0, 0),
             datetime.datetime(1900, 1, 1, 0, 20),

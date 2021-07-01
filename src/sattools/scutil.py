@@ -191,6 +191,13 @@ def _get_abi_glm_nonmeso_multiscene(
             start_date, end_date, sector=sector, chans=chans)
     glm_files = list(glm.ensure_glm_for_period(
             start_date, end_date, sector=sector))
+    groups = satpy.readers.group_files(
+            abi_fsfiles + glm_files,
+            reader=["abi_l1b", "glm_l2"],
+            group_keys=["start_time"],
+            time_threshold=time_thresholds[sector],
+            missing="raise")
+#    ms = get_collapsed_multiscene_from_groups(groups)
     ms = satpy.MultiScene.from_files(
             abi_fsfiles + glm_files,
             reader=["abi_l1b", "glm_l2"],

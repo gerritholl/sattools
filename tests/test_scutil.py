@@ -218,3 +218,9 @@ def test_collapse_multiscene():
     for (outscene, refscene) in zip(out.scenes, ref.scenes):
         assert (outscene.to_xarray_dataset() ==
                 refscene.to_xarray_dataset()).all()
+
+
+def test_get_collapsed_multiscene_from_groups():
+    """Test getting a collapsed multiscene from groups."""
+    from sattools.scutil import get_collapsed_multiscene_from_groups
+    get_collapsed_multiscene_from_groups(groups)
