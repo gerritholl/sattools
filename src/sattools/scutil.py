@@ -178,6 +178,8 @@ def _get_abi_glm_meso_multiscenes(start_date, end_date, chans, sector,
         yield here_ms
 
 
+time_thresholds = {"C": 290, "F": 590}
+
 def _get_abi_glm_nonmeso_multiscene(
         start_date, end_date, chans, sector, from_glm):
     """Get a multiscene with ABI and GLM for period.
@@ -193,7 +195,8 @@ def _get_abi_glm_nonmeso_multiscene(
             abi_fsfiles + glm_files,
             reader=["abi_l1b", "glm_l2"],
             group_keys=["start_time"],
-            time_threshold=35)
+            time_threshold=time_thresholds[sector],
+            missing="raise")
     with log.RaiseOnWarnContext(logging.getLogger("satpy")):
         ms.load([f"C{c:>02d}" for c in chans] + from_glm)
         ms.scenes
