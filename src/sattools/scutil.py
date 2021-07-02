@@ -259,3 +259,19 @@ def collapse_abi_glm_multiscene(ms):
             glm.clear()
             abi_cont.clear()
     return satpy.MultiScene(scenes)
+
+
+def get_collapsed_multiscene_from_groups(groups):
+    g = _generate_scenes_for_collapsed_multiscene(groups)
+    return satpy.MultiScene(g)
+
+
+def _generate_scenes_for_collapsed_multiscene(groups):
+    for g in groups:
+        sc = satpy.Scene(filenames=g)
+        sc = glm.get_integrated_scene(g["glm_l2"], sc)
+#        sc_abi = satpy.Scene(filenames={"abi_l1b": g["abi_l1b"]})
+        sc.load(["C14", "C14_flash_extent_density"])
+#        sc["C14"] = sc_abi["C14"]
+#        sc.load(["C14_flash_extent_density"])
+        yield sc

@@ -8,6 +8,8 @@ import s3fs
 import fsspec.implementations.cached
 import logging
 import os
+import satpy
+import xarray
 
 from typhon.files.fileset import FileSet
 
@@ -195,3 +197,20 @@ def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
         gridder(glm_filenames, start_time, end_time, **grid_kwargs)
 
         idx += max_files
+
+
+def get_integrated_scene(glm_files, start_scene=None):
+    """Get an integrated scene.
+
+    Given a set of GLM files, get a scene where quantities are summed or
+    averaged or so.
+    """
+    ms = satpy.MultiScene.from_files(
+            glm_files,
+            "glm_l2",
+            time_threshold=10,
+            group_keys=["start_time"])
+    ms.load(["flash_extent_density"])
+    with xarray.set_options(keep_attrs=True):
+        sc = ms.blend(sum, scene=start_scene)
+    return sc

@@ -115,8 +115,7 @@ def test_show_video_from_times(
     from sattools.vis import show_video_abi_glm_times
 
     def fake_ensure_glm(start_date, end_date, sector="C", lat=0, lon=0):
-        return utils.create_fake_glm_for_period(tmp_path, start_date, end_date, sector,
-                lat, lon)
+        return utils.create_fake_glm_for_period(tmp_path, start_date, end_date, sector)
 
     def fake_get_abi(start_date, end_date, sector, chans):
         return utils.create_fake_abi_for_period(tmp_path, start_date, end_date,

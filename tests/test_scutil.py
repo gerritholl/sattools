@@ -7,7 +7,9 @@ import numpy
 import pandas
 
 import satpy
+import pyresample.geometry
 import pytest
+from . import utils
 
 
 def test_get_all_areas(fake_multiscene):
@@ -220,7 +222,37 @@ def test_collapse_multiscene():
                 refscene.to_xarray_dataset()).all()
 
 
-def test_get_collapsed_multiscene_from_groups():
+def test_get_collapsed_multiscene_from_groups(tmp_path):
     """Test getting a collapsed multiscene from groups."""
     from sattools.scutil import get_collapsed_multiscene_from_groups
-    get_collapsed_multiscene_from_groups(groups)
+    fake_glm = utils.create_fake_glm_for_period(
+            tmp_path,
+            datetime.datetime(1900, 1, 1, 0, 0, 0),
+            datetime.datetime(1900, 1, 1, 0, 9, 0),
+            "C")
+    fake_abi = utils.create_fake_abi_for_period(
+            tmp_path,
+            datetime.datetime(1900, 1, 1, 0, 0, 0),
+            datetime.datetime(1900, 1, 1, 0, 5, 0),
+            "C",
+            [14])
+    assert len(fake_glm) == 10
+    assert len(fake_abi) == 2
+    groups = [
+            {"abi_l1b": fake_abi[0:1], "glm_l2": fake_glm[0:5]},
+            {"abi_l1b": fake_abi[1:2], "glm_l2": fake_glm[5:10]},
+            ]
+    ms = get_collapsed_multiscene_from_groups(groups)
+    assert len(ms.scenes) == 2
+    for sc in ms.scenes:
+        assert {x["name"] for x in sc.keys()} == {
+                "flash_extent_density", "C14", "C14_flash_extent_density"}
+        for k in sc.keys():
+            assert isinstance(sc[k].attrs["area"],
+                              pyresample.geometry.AreaDefinition)
+        numpy.testing.assert_array_equal(
+                sc["flash_extent_density"].data,
+                numpy.full((10, 10), 5))
+        numpy.testing.assert_array_almost_equal(
+                sc["C14"].data,
+                numpy.full((10, 10), 142.031245))

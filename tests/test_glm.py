@@ -7,9 +7,11 @@ import logging
 
 from unittest.mock import patch, call, MagicMock
 
+import numpy
 import pandas
 import pytest
-from conftest import _mk_test_files
+from .conftest import _mk_test_files
+from . import utils
 
 
 def test_get_basedir(tmp_path, monkeypatch):
@@ -296,3 +298,16 @@ def test_load_file(ium, ius):
     """Test loading file as module."""
     from sattools.glm import load_file
     load_file("module", "/dev/null")
+
+
+def test_get_integrated_glm(tmp_path):
+    from sattools.glm import get_integrated_scene
+    fake_glm = utils.create_fake_glm_for_period(
+            tmp_path,
+            datetime.datetime(1900, 1, 1, 0, 0, 0),
+            datetime.datetime(1900, 1, 1, 0, 4, 0),
+            "C")
+    sc = get_integrated_scene(fake_glm)
+    numpy.testing.assert_array_equal(
+            sc["flash_extent_density"],
+            numpy.full((10, 10), 5))
