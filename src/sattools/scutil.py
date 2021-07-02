@@ -1,5 +1,6 @@
 """Utilities to get and manipulate scenes and multiscenes."""
 
+import os
 import logging
 import numbers
 
@@ -166,6 +167,8 @@ def _get_abi_glm_meso_multiscenes(start_date, end_date, chans, sector,
             fn, lfs) for fn in here_glm_files]
         here_abi_fsfiles = abi.get_fsfiles(
                 here_start, here_end, sector=sector, chans=chans)
+        # workaround for https://github.com/pytroll/satpy/issues/1741
+        here_glm_fsfiles = [os.fspath(fsf) for fsf in here_glm_fsfiles]
         here_ms = satpy.MultiScene.from_files(
                 here_glm_fsfiles +
                 here_abi_fsfiles,
@@ -198,7 +201,9 @@ def _get_abi_glm_nonmeso_multiscene(
             group_keys=["start_time"],
             time_threshold=time_thresholds[sector],
             missing="raise")
-    ms = get_collapsed_multiscene_from_groups(groups)
+    ms = get_collapsed_multiscene_from_groups(
+            groups,
+            [f"C{c:>02d}" for c in chans] + from_glm)
     with log.RaiseOnWarnContext(logging.getLogger("satpy")):
         ms.load([f"C{c:>02d}" for c in chans] + from_glm)
         ms.scenes
@@ -256,20 +261,21 @@ def collapse_abi_glm_multiscene(ms):
     return satpy.MultiScene(scenes)
 
 
-def get_collapsed_multiscene_from_groups(groups):
+def get_collapsed_multiscene_from_groups(groups, to_load):
     """Get collapsed multiscene from groups.
 
     Given groups such as returned by ``satpy.readers.group_files``, where each
     group has one ABI and multiple GLM, sum get a multiscene where each scene
     has one ABI and one GLM, obtained by summing the flash extent densities.
     """
-    g = _generate_scenes_for_collapsed_multiscene(groups)
+    g = _generate_scenes_for_collapsed_multiscene(groups, to_load)
     return satpy.MultiScene(g)
 
 
-def _generate_scenes_for_collapsed_multiscene(groups):
+def _generate_scenes_for_collapsed_multiscene(
+        groups, to_load):
     for g in groups:
         sc = satpy.Scene(filenames=g)
         sc = glm.get_integrated_scene(g["glm_l2"], sc)
-        sc.load(["C14", "C14_flash_extent_density"])
+        sc.load(to_load)
         yield sc
