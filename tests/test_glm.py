@@ -301,6 +301,7 @@ def test_load_file(ium, ius):
 
 
 def test_get_integrated_glm(tmp_path):
+    """Test getting integrated GLM."""
     from sattools.glm import get_integrated_scene
     fake_glm = utils.create_fake_glm_for_period(
             tmp_path,

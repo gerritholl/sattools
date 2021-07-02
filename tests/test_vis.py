@@ -1,16 +1,11 @@
 """Test visualisation routines."""
 
 import datetime
-import os
 
 from unittest.mock import patch, MagicMock
 
-import pandas
 import pytest
 import pyresample
-import satpy.readers
-import xarray
-import numpy
 
 from . import utils
 
@@ -115,11 +110,12 @@ def test_show_video_from_times(
     from sattools.vis import show_video_abi_glm_times
 
     def fake_ensure_glm(start_date, end_date, sector="C", lat=0, lon=0):
-        return utils.create_fake_glm_for_period(tmp_path, start_date, end_date, sector)
+        return utils.create_fake_glm_for_period(tmp_path, start_date,
+                                                end_date, sector)
 
     def fake_get_abi(start_date, end_date, sector, chans):
         return utils.create_fake_abi_for_period(tmp_path, start_date, end_date,
-                sector, chans)
+                                                sector, chans)
 
     monkeypatch.setenv("NAS_DATA", str(tmp_path / "nas"))
     with patch("sattools.abi.get_fsfiles", new=fake_get_abi), \
@@ -130,16 +126,4 @@ def test_show_video_from_times(
             out_dir=tmp_path / "show-vid",
             vid_out="test.mp4",
             enh_args={})
-    sM.from_files.return_value.save_animation.assert_called_once_with(
-            os.fspath(tmp_path / "show-vid" / "test.mp4"),
-            enh_args={})
-
-#@pytest.mark.integtest
-#def test_show_video_from_times_unmocked(tmp_path):
-#    from sattools.vis import show_video_abi_glm_times
-#    show_video_abi_glm_times(
-#            datetime.datetime(2021, 6, 1, 18, 0),
-#            datetime.datetime(2021, 6, 1, 18, 1),
-#            out_dir=tmp_path / "show-vid",
-#            vid_out="test.mp4",
-#            enh_args={})
+    assert (tmp_path / "show-vid" / "test.mp4").exists()

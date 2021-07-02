@@ -148,15 +148,6 @@ def fake_multiscene_vary_meso():
     return satpy.MultiScene(scenes)
 
 
-# @pytest.fixture
-# def glmc_pattern(tmp_path):
-#     # typhon fileset doesn't understand the full format-specification
-#     # mini-language, so something like hour:>02d doesn't work...
-#     return str(tmp_path / "nas" / "glmc-fake" /
-#                "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
-#                "{end_hour}{end_minute}{end_second}.nc")
-
-
 @pytest.fixture
 def better_glmc_pattern(tmp_path):
     """Return a GLMC pattern suitable for creation not just finding."""

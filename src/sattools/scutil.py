@@ -180,6 +180,7 @@ def _get_abi_glm_meso_multiscenes(start_date, end_date, chans, sector,
 
 time_thresholds = {"C": 290, "F": 590}
 
+
 def _get_abi_glm_nonmeso_multiscene(
         start_date, end_date, chans, sector, from_glm):
     """Get a multiscene with ABI and GLM for period.
@@ -197,13 +198,7 @@ def _get_abi_glm_nonmeso_multiscene(
             group_keys=["start_time"],
             time_threshold=time_thresholds[sector],
             missing="raise")
-#    ms = get_collapsed_multiscene_from_groups(groups)
-    ms = satpy.MultiScene.from_files(
-            abi_fsfiles + glm_files,
-            reader=["abi_l1b", "glm_l2"],
-            group_keys=["start_time"],
-            time_threshold=time_thresholds[sector],
-            missing="raise")
+    ms = get_collapsed_multiscene_from_groups(groups)
     with log.RaiseOnWarnContext(logging.getLogger("satpy")):
         ms.load([f"C{c:>02d}" for c in chans] + from_glm)
         ms.scenes
@@ -262,6 +257,12 @@ def collapse_abi_glm_multiscene(ms):
 
 
 def get_collapsed_multiscene_from_groups(groups):
+    """Get collapsed multiscene from groups.
+
+    Given groups such as returned by ``satpy.readers.group_files``, where each
+    group has one ABI and multiple GLM, sum get a multiscene where each scene
+    has one ABI and one GLM, obtained by summing the flash extent densities.
+    """
     g = _generate_scenes_for_collapsed_multiscene(groups)
     return satpy.MultiScene(g)
 
@@ -270,8 +271,5 @@ def _generate_scenes_for_collapsed_multiscene(groups):
     for g in groups:
         sc = satpy.Scene(filenames=g)
         sc = glm.get_integrated_scene(g["glm_l2"], sc)
-#        sc_abi = satpy.Scene(filenames={"abi_l1b": g["abi_l1b"]})
         sc.load(["C14", "C14_flash_extent_density"])
-#        sc["C14"] = sc_abi["C14"]
-#        sc.load(["C14_flash_extent_density"])
         yield sc
