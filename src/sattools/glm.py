@@ -174,7 +174,7 @@ def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
                  "F": "full"}
     while idx < len(files):
         these_files = files[idx:(idx+max_files)]
-        logger.info("Running glmtools for " + ", ".join(
+        logger.info("Running glmtools for " + " ".join(
                     str(f) for f in these_files))
         arg_list = ["--fixed_grid", "--split_events",
                     "--goes_position", "east", "--goes_sector",

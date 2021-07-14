@@ -269,7 +269,7 @@ def test_run_glmtools(tmp_path, caplog, monkeypatch):
             run_glmtools(
                     [tmp_path / "lcfa1.nc", tmp_path / "lcfa2.nc"],
                     sector="F")
-            assert (f"Running glmtools for {(tmp_path / 'lcfa1.nc')!s}, "
+            assert (f"Running glmtools for {(tmp_path / 'lcfa1.nc')!s} "
                     f"{(tmp_path / 'lcfa2.nc')!s}" in caplog.text)
         mocks[0].assert_called_once()
         # confirm we passed the correct sector
