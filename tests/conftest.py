@@ -113,7 +113,7 @@ def fake_multiscene3(fake_multiscene2):
 
 
 @pytest.fixture
-def fake_multiscene4():
+def fake_multiscene_vary_meso():
     """Like fake_multiscene2, but with varying areas (none stacked)."""
     from satpy.dataset.dataid import WavelengthRange
     from satpy.tests.utils import make_dataid
@@ -146,15 +146,6 @@ def fake_multiscene4():
             da.attrs["start_time"] = datetime.datetime(1900, 1, 1, 0, i)
             da.attrs["end_time"] = datetime.datetime(1900, 1, 1, 0, i+1)
     return satpy.MultiScene(scenes)
-
-
-# @pytest.fixture
-# def glmc_pattern(tmp_path):
-#     # typhon fileset doesn't understand the full format-specification
-#     # mini-language, so something like hour:>02d doesn't work...
-#     return str(tmp_path / "nas" / "glmc-fake" /
-#                "glmc-fake-{year}{month}{day}{hour}{minute}{second}-"
-#                "{end_hour}{end_minute}{end_second}.nc")
 
 
 @pytest.fixture

@@ -5,7 +5,9 @@ import unittest.mock
 import numpy
 
 import satpy
+import pyresample.geometry
 import pytest
+from . import utils
 
 
 def test_get_all_areas(fake_multiscene):
@@ -90,74 +92,55 @@ def test_prepare_args(sag, sge, tmp_path):
             sector="M1")
 
 
-@unittest.mock.patch("sattools.glm.ensure_glm_for_period", autospec=True)
-@unittest.mock.patch("sattools.abi.get_fsfiles", autospec=True)
-def test_get_multiscenes(sag, sge, fake_multiscene4, tmp_path):
+def test_get_multiscenes(tmp_path):
     """Test getting a multiscene with ABI and GLM."""
     from sattools.scutil import get_abi_glm_multiscenes
-    from sattools.abi import split_meso
-    from fsspec.implementations.local import LocalFileSystem
-    from typhon.files.handlers.common import FileInfo
-    from satpy.readers import FSFile
 
-    sge.return_value = [
-            FileInfo(path=str(tmp_path / f"glm{i:d}"),
-                     times=[datetime.datetime(1900, 1, 1, 0, i),
-                            datetime.datetime(1900, 1, 1, 0, i+1)],
-                     attr={})
-            for i in range(5)]
-    sag.return_value = [
-            FSFile(tmp_path / f"abi{i:d}",
-                   LocalFileSystem())
-            for i in range(5)]
+    def fake_ensure_glm(start, end, sector=None, lon=None, lat=None):
+        return utils.create_fake_glm_for_period(
+                tmp_path, start, end, sector)
 
-    others = list(split_meso(fake_multiscene4))
+    def fake_abi_getfsfiles(start, end, sector=None, chans=None):
+        return utils.create_fake_abi_for_period(
+                tmp_path, start, end, sector=sector, chans=chans)
+    # test meso situation
 
-    class FakeMultiScene(satpy.MultiScene):
-        @classmethod
-        def from_files(cls, files_to_sort, reader=None,
-                       ensure_all_readers=False, scene_kwargs=None,
-                       **kwargs):
-            if reader == ["abi_l1b"]:
-                return fake_multiscene4
-            else:
-                return others[0]
-
-    with unittest.mock.patch("satpy.MultiScene", new=FakeMultiScene):
+    with unittest.mock.patch("sattools.glm.ensure_glm_for_period",
+                             new=fake_ensure_glm), \
+         unittest.mock.patch("sattools.abi.get_fsfiles",
+                             new=fake_abi_getfsfiles):
         mss = list(get_abi_glm_multiscenes(
                 datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 1, 0),
+                datetime.datetime(1900, 1, 1, 0, 10),
                 chans=[8, 10],
                 sector="M1"))
         assert "C08" in mss[0].first_scene
         assert "C10" in mss[0].first_scene
         assert "flash_extent_density" in mss[0].first_scene
-        # should be requesting GLM for the first six minutes, sector M1,
-        # lat/lon centred at 0
-        sge.assert_any_call(
+
+        assert list(get_abi_glm_multiscenes(
                 datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 0, 6),
+                datetime.datetime(1900, 1, 1, 0, 10),
+                chans=[8, 10],
                 sector="M1",
-                lat=0.0,
-                lon=0.0)
-        with pytest.raises(NotImplementedError):
-            mss = list(get_abi_glm_multiscenes(
-                    datetime.datetime(1900, 1, 1, 0, 0),
-                    datetime.datetime(1900, 1, 1, 1, 0),
-                    chans=[8, 10],
-                    sector="F"))
+                limit=0)) == []
+
+    # test full situation
+
+    #    with unittest.mock.patch("satpy.MultiScene") as sM:
+        mss = list(get_abi_glm_multiscenes(
+                datetime.datetime(1900, 1, 1, 0, 0),
+                datetime.datetime(1900, 1, 1, 1, 0),
+                chans=[8, 10],
+                sector="F"))
+        assert len(mss) == 1
+    #    assert sM.from_files.call_count == 1
         with pytest.raises(ValueError):
             mss = list(get_abi_glm_multiscenes(
                     datetime.datetime(1900, 1, 1, 0, 0),
                     datetime.datetime(1900, 1, 1, 1, 0),
                     chans=[8, 10],
                     sector="full"))
-        assert list(get_abi_glm_multiscenes(
-                datetime.datetime(1900, 1, 1, 0, 0),
-                datetime.datetime(1900, 1, 1, 1, 0),
-                chans=[8, 10],
-                sector="M1",
-                limit=0)) == []
 
 
 def test_collapse_multiscene():
@@ -186,3 +169,41 @@ def test_collapse_multiscene():
     for (outscene, refscene) in zip(out.scenes, ref.scenes):
         assert (outscene.to_xarray_dataset() ==
                 refscene.to_xarray_dataset()).all()
+
+
+def test_get_collapsed_multiscene_from_groups(tmp_path):
+    """Test getting a collapsed multiscene from groups."""
+    from sattools.scutil import get_collapsed_multiscene_from_groups
+    fake_glm = utils.create_fake_glm_for_period(
+            tmp_path,
+            datetime.datetime(1900, 1, 1, 0, 0, 0),
+            datetime.datetime(1900, 1, 1, 0, 9, 0),
+            "C")
+    fake_abi = utils.create_fake_abi_for_period(
+            tmp_path,
+            datetime.datetime(1900, 1, 1, 0, 0, 0),
+            datetime.datetime(1900, 1, 1, 0, 5, 0),
+            "C",
+            [14])
+    assert len(fake_glm) == 10
+    assert len(fake_abi) == 2
+    groups = [
+            {"abi_l1b": fake_abi[0:1], "glm_l2": fake_glm[0:5]},
+            {"abi_l1b": fake_abi[1:2], "glm_l2": fake_glm[5:10]},
+            ]
+    ms = get_collapsed_multiscene_from_groups(
+            groups, ["C14", "C14_flash_extent_density",
+                     "flash_extent_density"])
+    assert len(ms.scenes) == 2
+    for sc in ms.scenes:
+        assert {x["name"] for x in sc.keys()} == {
+                "flash_extent_density", "C14", "C14_flash_extent_density"}
+        for k in sc.keys():
+            assert isinstance(sc[k].attrs["area"],
+                              pyresample.geometry.AreaDefinition)
+        numpy.testing.assert_array_equal(
+                sc["flash_extent_density"].data,
+                numpy.full((10, 10), 5))
+        numpy.testing.assert_array_almost_equal(
+                sc["C14"].data,
+                numpy.full((10, 10), 142.031245))

@@ -8,6 +8,8 @@ import s3fs
 import fsspec.implementations.cached
 import logging
 import os
+import satpy
+import xarray
 
 from typhon.files.fileset import FileSet
 
@@ -83,7 +85,7 @@ def ensure_glm_for_period(
         start_date, end_date, sector="C", lat=None, lon=None):
     """Get gridded GLM for period, unless already existing.
 
-    Yields resulting GLM files as FSPath objects.
+    Yields resulting GLM files as strings.
     """
     logger.debug(
             "Locating GLM gaps between "
@@ -172,7 +174,7 @@ def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
                  "F": "full"}
     while idx < len(files):
         these_files = files[idx:(idx+max_files)]
-        logger.info("Running glmtools for " + ", ".join(
+        logger.info("Running glmtools for " + " ".join(
                     str(f) for f in these_files))
         arg_list = ["--fixed_grid", "--split_events",
                     "--goes_position", "east", "--goes_sector",
@@ -195,3 +197,20 @@ def run_glmtools(files, max_files=180, sector="C", lat=None, lon=None):
         gridder(glm_filenames, start_time, end_time, **grid_kwargs)
 
         idx += max_files
+
+
+def get_integrated_scene(glm_files, start_scene=None):
+    """Get an integrated scene.
+
+    Given a set of GLM files, get a scene where quantities are summed or
+    averaged or so.
+    """
+    ms = satpy.MultiScene.from_files(
+            glm_files,
+            "glm_l2",
+            time_threshold=10,
+            group_keys=["start_time"])
+    ms.load(["flash_extent_density"])
+    with xarray.set_options(keep_attrs=True):
+        sc = ms.blend(sum, scene=start_scene)
+    return sc

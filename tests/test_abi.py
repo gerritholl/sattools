@@ -47,16 +47,16 @@ def test_get_fs_and_files(sS, tmp_path, monkeypatch, sector):
             chans=12) == []
 
 
-def test_split_meso(fake_multiscene4):
+def test_split_meso(fake_multiscene_vary_meso):
     """Test splitting MESO by area."""
     from sattools.abi import split_meso
-    L = list(split_meso(fake_multiscene4))
+    L = list(split_meso(fake_multiscene_vary_meso))
     assert len(L) == 3
     assert len(L[0].scenes) == 6
     assert len(L[1].scenes) == 3
     assert len(L[2].scenes) == 1
     # assert that each dataset has the same area throughout the multiscene
     # (although areas between datasets can still differ)
-    for did in fake_multiscene4.first_scene.keys():
+    for did in fake_multiscene_vary_meso.first_scene.keys():
         for ms in L:
             assert len({sc[did].attrs["area"] for sc in ms}) == 1
